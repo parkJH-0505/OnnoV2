@@ -1,0 +1,1850 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Onno - AI Meeting Intelligence</title>
+
+  <!-- Pretendard Font -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Alpine.js CDN -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <!-- Tailwind Custom Config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            primary: {
+              50: '#EFF6FF',
+              100: '#DBEAFE',
+              500: '#3B82F6',
+              600: '#2563EB',
+              700: '#1D4ED8',
+            },
+            success: {
+              50: '#ECFDF5',
+              100: '#D1FAE5',
+              500: '#10B981',
+              600: '#059669',
+            },
+            warning: {
+              50: '#FFFBEB',
+              100: '#FEF3C7',
+              300: '#FCD34D',
+              500: '#F59E0B',
+              800: '#92400E',
+            },
+            danger: {
+              50: '#FEF2F2',
+              100: '#FEE2E2',
+              500: '#EF4444',
+              600: '#DC2626',
+              800: '#991B1B',
+            },
+          },
+          boxShadow: {
+            'sm': '0 1px 2px rgba(0, 0, 0, 0.05)',
+            'md': '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            'lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+            'xl': '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+            'hud': '0 8px 32px rgba(0, 0, 0, 0.12)',
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.3s ease-out',
+            'slide-up': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+            'scale-in': 'scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+            'pulse-border': 'pulseBorder 1.5s infinite',
+            'shake': 'shake 0.5s ease-in-out',
+            'bounce-in': 'bounceIn 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+            'spin-slow': 'spin 1s linear infinite',
+            'progress': 'progress 3s linear',
+          },
+        },
+      },
+    }
+  </script>
+
+  <!-- Custom CSS -->
+  <style>
+    /* ============================================
+       CSS Variables (Design System)
+       Reference: 04_Figma Line 98-339
+       ============================================ */
+    :root {
+      /* Timing */
+      --duration-fast: 150ms;
+      --duration-normal: 300ms;
+      --duration-slow: 500ms;
+
+      /* Easing */
+      --ease-in: cubic-bezier(0.4, 0, 1, 1);
+      --ease-out: cubic-bezier(0, 0, 0.2, 1);
+      --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+      --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* ============================================
+       Keyframe Animations
+       Reference: 04_Figma Line 4023-4131
+       ============================================ */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes scaleIn {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes scaleOut {
+      from { transform: scale(1); opacity: 1; }
+      to { transform: scale(0.95); opacity: 0; }
+    }
+
+    @keyframes pulseBorder {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(252, 211, 77, 0); }
+      50% { box-shadow: 0 0 0 4px rgba(252, 211, 77, 0.4); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    @keyframes bounceIn {
+      0% { transform: scale(0); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes progress {
+      from { width: 0%; }
+      to { width: 100%; }
+    }
+
+    @keyframes recording {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* ============================================
+       Component Styles
+       ============================================ */
+
+    /* Button Base */
+    .btn {
+      @apply inline-flex items-center justify-center px-4 py-2.5 rounded-lg font-medium text-sm
+             transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2;
+    }
+
+    /* Primary Button - Reference: 04_Figma Line 3832-3850 */
+    .btn-primary {
+      @apply btn bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800
+             focus:ring-primary-500 disabled:bg-gray-300 disabled:cursor-not-allowed;
+    }
+
+    /* Secondary Button - Reference: 04_Figma Line 3852-3870 */
+    .btn-secondary {
+      @apply btn bg-white text-gray-700 border border-gray-300
+             hover:bg-gray-50 active:bg-gray-100 focus:ring-gray-500
+             disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed;
+    }
+
+    /* Ghost Button - Reference: 04_Figma Line 3872-3890 */
+    .btn-ghost {
+      @apply btn bg-transparent text-gray-600 hover:bg-gray-100 active:bg-gray-200 focus:ring-gray-400;
+    }
+
+    /* Danger Button - Reference: 04_Figma Line 3892-3896 */
+    .btn-danger {
+      @apply btn bg-danger-600 text-white hover:bg-danger-700 active:bg-danger-800 focus:ring-danger-500;
+    }
+
+    /* OAuth Button - Reference: 04_Figma Line 625-700 */
+    .btn-oauth {
+      @apply btn w-full py-3 bg-white border border-gray-200 text-gray-700 font-medium
+             hover:bg-gray-50 hover:border-gray-300 active:bg-gray-100;
+    }
+
+    .btn-oauth-google {
+      @apply btn-oauth;
+    }
+
+    .btn-oauth-github {
+      @apply btn-oauth bg-gray-900 text-white border-gray-900 hover:bg-gray-800 hover:border-gray-800;
+    }
+
+    /* Input Field - Reference: 04_Figma Line 3898-3940 */
+    .input-field {
+      @apply w-full px-4 py-3 rounded-lg border border-gray-300 text-gray-900 text-sm
+             placeholder:text-gray-400 transition-all duration-150
+             focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+             disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed;
+    }
+
+    .input-field.error {
+      @apply border-danger-500 focus:ring-danger-500 focus:border-danger-500;
+    }
+
+    /* Gap Field - Reference: 04_Figma Line 3215-3255 */
+    .gap-field {
+      @apply px-3 py-2 rounded-md border-2 text-sm transition-all duration-200;
+    }
+
+    .gap-field.empty {
+      @apply border-warning-300 bg-warning-50 animate-pulse-border;
+    }
+
+    .gap-field.focused {
+      @apply border-primary-500 bg-white ring-2 ring-primary-100;
+    }
+
+    .gap-field.filled {
+      @apply border-success-500 bg-success-50;
+    }
+
+    /* Checkbox - Reference: 04_Figma Line 1875-1920 */
+    .checkbox-wrapper {
+      @apply inline-flex items-center gap-2 cursor-pointer;
+    }
+
+    .checkbox {
+      @apply w-5 h-5 rounded border-2 border-gray-300 transition-all duration-150
+             checked:bg-primary-600 checked:border-primary-600 focus:ring-2 focus:ring-primary-500;
+    }
+
+    /* Card Base */
+    .card {
+      @apply bg-white rounded-xl border border-gray-200 shadow-sm transition-all duration-200;
+    }
+
+    .card:hover {
+      @apply shadow-md border-gray-300;
+    }
+
+    /* Meeting Card - Reference: 04_Figma Line 1589-1682 */
+    .card-meeting {
+      @apply card p-4 cursor-pointer;
+    }
+
+    .card-meeting.active {
+      @apply border-success-500 border-2 bg-success-50/30;
+    }
+
+    .card-meeting.incomplete {
+      @apply border-danger-500 border-2;
+    }
+
+    /* Modal Overlay - Reference: 04_Figma Line 1720-1730 */
+    .modal-overlay {
+      @apply fixed inset-0 bg-black/50 z-40 transition-opacity duration-300;
+    }
+
+    /* Modal Container - Reference: 04_Figma Line 1731-1738 */
+    .modal-container {
+      @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+    }
+
+    .modal-content {
+      @apply bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto
+             animate-scale-in;
+    }
+
+    .modal-content.large {
+      @apply max-w-lg;
+    }
+
+    .modal-content.xlarge {
+      @apply max-w-2xl;
+    }
+
+    /* Toast - Reference: 04_Figma Line 3963-4019 */
+    .toast {
+      @apply flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm font-medium
+             animate-slide-up;
+    }
+
+    .toast-success {
+      @apply toast bg-success-600 text-white;
+    }
+
+    .toast-error {
+      @apply toast bg-danger-600 text-white;
+    }
+
+    .toast-info {
+      @apply toast bg-primary-600 text-white;
+    }
+
+    .toast-warning {
+      @apply toast bg-warning-500 text-white;
+    }
+
+    /* HUD Base - Reference: 04_Figma Line 807-872 */
+    .hud {
+      @apply fixed z-50 bg-white/95 backdrop-blur-sm rounded-2xl shadow-hud
+             transition-all duration-300;
+    }
+
+    .hud-idle {
+      @apply hud w-[300px] h-[60px] opacity-80 hover:opacity-100;
+    }
+
+    .hud-expanded {
+      @apply hud w-[375px] min-h-[200px];
+    }
+
+    .hud-alert-1 {
+      @apply hud w-[300px] min-h-[120px] border-2 border-primary-500;
+    }
+
+    .hud-alert-2 {
+      @apply hud w-[375px] min-h-[180px] border-2 border-warning-500;
+    }
+
+    .hud-alert-3 {
+      @apply hud w-[375px] min-h-[250px] border-2 border-danger-500 animate-shake;
+    }
+
+    /* Tab Bar - Reference: 04_Figma Line 3771-3830 */
+    .tab-bar {
+      @apply fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200
+             flex items-center justify-around h-16 z-30;
+    }
+
+    .tab-item {
+      @apply flex flex-col items-center gap-1 py-2 px-4 text-gray-500
+             transition-colors duration-200 cursor-pointer;
+    }
+
+    .tab-item.active {
+      @apply text-primary-600;
+    }
+
+    .tab-item:hover:not(.active) {
+      @apply text-gray-700;
+    }
+
+    /* Badge */
+    .badge {
+      @apply inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-semibold;
+    }
+
+    .badge-danger {
+      @apply badge bg-danger-100 text-danger-800;
+    }
+
+    .badge-warning {
+      @apply badge bg-warning-100 text-warning-800;
+    }
+
+    .badge-success {
+      @apply badge bg-success-100 text-success-600;
+    }
+
+    .badge-primary {
+      @apply badge bg-primary-100 text-primary-700;
+    }
+
+    /* Recording Indicator */
+    .recording-dot {
+      @apply w-3 h-3 rounded-full bg-success-500;
+      animation: recording 1.5s ease-in-out infinite;
+    }
+
+    /* Progress Dots - Reference: 04_Figma Line 3257-3287 */
+    .progress-dots {
+      @apply flex items-center gap-2;
+    }
+
+    .progress-dot {
+      @apply w-2 h-2 rounded-full bg-gray-300 transition-colors duration-200;
+    }
+
+    .progress-dot.active {
+      @apply bg-primary-600;
+    }
+
+    .progress-dot.completed {
+      @apply bg-success-500;
+    }
+
+    /* Spinner */
+    .spinner {
+      @apply w-5 h-5 border-2 border-gray-300 border-t-primary-600 rounded-full animate-spin-slow;
+    }
+
+    /* Section Header */
+    .section-header {
+      @apply flex items-center justify-between mb-3;
+    }
+
+    .section-title {
+      @apply text-sm font-semibold text-gray-900 flex items-center gap-2;
+    }
+
+    /* Link Style */
+    .link {
+      @apply text-primary-600 hover:text-primary-700 underline-offset-2 hover:underline
+             transition-colors duration-150 cursor-pointer;
+    }
+
+    /* Divider */
+    .divider {
+      @apply border-t border-gray-200 my-4;
+    }
+
+    /* Screen Container */
+    .screen {
+      @apply min-h-screen bg-gray-50;
+    }
+
+    .screen-content {
+      @apply max-w-md mx-auto px-4 py-6 pb-20;
+    }
+
+    /* Scrollbar Custom */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #d1d5db;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #9ca3af;
+    }
+  </style>
+</head>
+
+<body class="font-sans antialiased text-gray-900 bg-gray-50" x-data="app()">
+
+  <!-- ============================================
+       Toast Container
+       ============================================ -->
+  <div class="fixed top-4 right-4 z-[100] flex flex-col gap-2" x-show="toasts.length > 0">
+    <template x-for="toast in toasts" :key="toast.id">
+      <div
+        :class="{
+          'toast-success': toast.type === 'success',
+          'toast-error': toast.type === 'error',
+          'toast-info': toast.type === 'info',
+          'toast-warning': toast.type === 'warning'
+        }"
+        x-text="toast.message"
+        x-transition:enter="animate-slide-up"
+        x-transition:leave="opacity-0 transition-opacity duration-200"
+      ></div>
+    </template>
+  </div>
+
+  <!-- ============================================
+       Screen: Landing
+       Reference: 04_Figma Line 343-410
+       ============================================ -->
+  <div
+    x-show="currentScreen === 'landing'"
+    x-transition:enter="animate-fade-in"
+    x-transition:leave="opacity-0 transition-opacity duration-200"
+    class="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-100 flex flex-col"
+  >
+    <!-- Landing Content -->
+    <div class="flex-1 flex flex-col items-center justify-center px-6 text-center">
+      <!-- Logo -->
+      <div class="mb-8">
+        <div class="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center mb-4 mx-auto shadow-lg">
+          <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+          </svg>
+        </div>
+        <h1 class="text-3xl font-bold text-gray-900">Onno</h1>
+      </div>
+
+      <!-- Hero Text -->
+      <h2 class="text-2xl font-bold text-gray-900 mb-3">
+        미팅의 모든 순간을<br>놓치지 마세요
+      </h2>
+      <p class="text-gray-600 mb-8 max-w-sm">
+        AI가 실시간으로 미팅을 분석하고,<br>
+        중요한 결정과 인사이트를 자동으로 정리합니다
+      </p>
+
+      <!-- CTA Button -->
+      <button
+        @click="startDemo()"
+        class="btn-primary text-base px-8 py-3.5 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
+      >
+        지금 체험하기
+      </button>
+
+      <p class="text-sm text-gray-500 mt-4">가입 없이 90초 데모 체험</p>
+    </div>
+
+    <!-- Bottom Indicator -->
+    <div class="pb-8 text-center">
+      <p class="text-xs text-gray-400">스크롤하여 더 알아보기</p>
+      <svg class="w-5 h-5 text-gray-400 mx-auto mt-2 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ============================================
+       Screen: Today
+       Reference: 04_Figma Line 1509-1587, 2623-2844
+       ============================================ -->
+  <div
+    x-show="currentScreen === 'today'"
+    x-transition:enter="animate-fade-in"
+    x-transition:leave="opacity-0 transition-opacity duration-200"
+    class="screen"
+  >
+    <div class="screen-content">
+      <!-- Header -->
+      <div class="mb-6">
+        <p class="text-sm text-gray-500" x-text="getGreeting()"></p>
+        <h1 class="text-2xl font-bold text-gray-900">
+          <span x-text="user.name"></span>님, 안녕하세요
+        </h1>
+        <p class="text-sm text-gray-500 mt-1" x-text="getTodayDate()"></p>
+      </div>
+
+      <!-- Section: 지금 바로 처리 -->
+      <template x-if="meetings.incomplete.length > 0">
+        <div class="mb-6">
+          <div class="section-header">
+            <h2 class="section-title">
+              <span class="badge-danger" x-text="meetings.incomplete.length"></span>
+              지금 바로 처리
+            </h2>
+          </div>
+          <div class="space-y-3">
+            <template x-for="meeting in meetings.incomplete" :key="meeting.id">
+              <div
+                class="card-meeting incomplete"
+                @click="openConfirmationModal(meeting)"
+              >
+                <div class="flex items-start justify-between">
+                  <div>
+                    <h3 class="font-semibold text-gray-900" x-text="meeting.title"></h3>
+                    <p class="text-sm text-gray-500" x-text="meeting.company + ' · ' + meeting.date"></p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="badge-danger" x-text="meeting.gaps + '개 미완료'"></span>
+                  </div>
+                </div>
+                <button class="btn-primary w-full mt-3 text-sm">지금 처리하기</button>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <!-- Section: 오늘 미팅 -->
+      <div class="mb-6">
+        <div class="section-header">
+          <h2 class="section-title">오늘 미팅</h2>
+          <span class="text-sm text-gray-400" x-text="meetings.today.length + '개'"></span>
+        </div>
+
+        <!-- Empty State -->
+        <template x-if="meetings.today.length === 0">
+          <div class="card p-8 text-center">
+            <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <p class="text-gray-500">오늘 예정된 미팅이 없습니다</p>
+          </div>
+        </template>
+
+        <!-- Meeting Cards -->
+        <div class="space-y-3">
+          <template x-for="meeting in meetings.today" :key="meeting.id">
+            <div
+              class="card-meeting"
+              :class="{ 'active': meeting.status === 'active' }"
+              @click="handleMeetingCardClick(meeting)"
+            >
+              <div class="flex items-start justify-between">
+                <div class="flex items-start gap-3">
+                  <!-- Time -->
+                  <div class="text-sm text-gray-500 w-14">
+                    <span x-text="meeting.startTime"></span>
+                  </div>
+                  <!-- Info -->
+                  <div>
+                    <h3 class="font-semibold text-gray-900" x-text="meeting.title"></h3>
+                    <p class="text-sm text-gray-500">
+                      <span x-text="meeting.company"></span>
+                      <span class="mx-1">·</span>
+                      <span x-text="meeting.participants.join(', ')"></span>
+                    </p>
+                  </div>
+                </div>
+                <!-- Status Badge -->
+                <div>
+                  <template x-if="meeting.status === 'scheduled'">
+                    <span class="badge bg-gray-100 text-gray-600">예정</span>
+                  </template>
+                  <template x-if="meeting.status === 'active'">
+                    <span class="badge-success flex items-center gap-1">
+                      <span class="w-2 h-2 bg-success-500 rounded-full animate-pulse"></span>
+                      진행 중
+                    </span>
+                  </template>
+                  <template x-if="meeting.status === 'completed'">
+                    <span class="badge-primary">완료</span>
+                  </template>
+                </div>
+              </div>
+
+              <!-- Action Button -->
+              <template x-if="meeting.status === 'scheduled'">
+                <button
+                  class="btn-secondary w-full mt-3 text-sm"
+                  @click.stop="openPreparationModal(meeting)"
+                >
+                  준비하기
+                </button>
+              </template>
+              <template x-if="meeting.status === 'active'">
+                <button
+                  class="btn-primary w-full mt-3 text-sm"
+                  @click.stop="navigate('now')"
+                >
+                  HUD 보기
+                </button>
+              </template>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+      <div class="tab-item active">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        <span class="text-xs font-medium">Today</span>
+      </div>
+      <div class="tab-item" @click="navigate('search')">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <span class="text-xs">Search</span>
+      </div>
+      <div class="tab-item">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        <span class="text-xs">Settings</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       Screen: Search
+       Reference: 04_Figma Line 3559-3767
+       ============================================ -->
+  <div
+    x-show="currentScreen === 'search'"
+    x-transition:enter="animate-fade-in"
+    x-transition:leave="opacity-0 transition-opacity duration-200"
+    class="screen"
+  >
+    <div class="screen-content">
+      <!-- Search Header -->
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 mb-4">검색</h1>
+
+        <!-- Search Input -->
+        <div class="relative">
+          <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input
+            type="text"
+            x-model="search.query"
+            @input="performSearch()"
+            class="input-field pl-12"
+            placeholder="미팅 내용, 결정 사항, 인사이트 검색..."
+          >
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <template x-if="!search.query && search.results.length === 0">
+        <div class="text-center py-16">
+          <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <p class="text-gray-500 mb-4">미팅 기록을 검색해보세요</p>
+          <div class="text-sm text-gray-400">
+            <p>예시: "투자 검토", "결정된 사항", "다음 단계"</p>
+          </div>
+        </div>
+      </template>
+
+      <!-- Search Results -->
+      <template x-if="search.results.length > 0">
+        <div>
+          <p class="text-sm text-gray-500 mb-4">
+            <span x-text="search.results.length"></span>개의 결과
+          </p>
+          <div class="space-y-3">
+            <template x-for="result in search.results" :key="result.id">
+              <div class="card p-4 cursor-pointer hover:border-primary-300">
+                <div class="flex items-start justify-between mb-2">
+                  <h3 class="font-semibold text-gray-900" x-text="result.meetingTitle"></h3>
+                  <span class="text-xs text-gray-400" x-text="result.date"></span>
+                </div>
+                <p class="text-sm text-gray-600" x-html="result.highlight"></p>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+      <div class="tab-item" @click="navigate('today')">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        <span class="text-xs">Today</span>
+      </div>
+      <div class="tab-item active">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <span class="text-xs font-medium">Search</span>
+      </div>
+      <div class="tab-item">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        <span class="text-xs">Settings</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       Screen: Now (HUD)
+       Reference: 04_Figma Line 807-1505
+       ============================================ -->
+  <div
+    x-show="currentScreen === 'now'"
+    x-transition:enter="animate-fade-in"
+    x-transition:leave="opacity-0 transition-opacity duration-200"
+    class="min-h-screen bg-gray-900/5"
+  >
+    <!-- Background overlay for demo -->
+    <div class="fixed inset-0 bg-gradient-to-br from-gray-100 to-gray-200 -z-10"></div>
+
+    <!-- HUD Component -->
+    <div
+      class="fixed top-4 right-4"
+      :class="{
+        'hud-idle': hud.state === 'idle',
+        'hud-expanded': hud.state === 'expanded',
+        'hud-alert-1': hud.state === 'alert-1',
+        'hud-alert-2': hud.state === 'alert-2',
+        'hud-alert-3': hud.state === 'alert-3',
+      }"
+    >
+      <!-- Idle State -->
+      <template x-if="hud.state === 'idle'">
+        <div class="flex items-center justify-between h-full px-4 cursor-pointer" @click="hud.state = 'expanded'">
+          <div class="flex items-center gap-3">
+            <div class="recording-dot"></div>
+            <span class="text-sm font-medium text-gray-700" x-text="formatTime(hud.elapsedTime)"></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <template x-if="hud.insightCount > 0">
+              <span class="badge-primary text-xs" x-text="hud.insightCount"></span>
+            </template>
+            <template x-if="hud.deferredCount > 0">
+              <span class="badge-warning text-xs" x-text="hud.deferredCount"></span>
+            </template>
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </div>
+        </div>
+      </template>
+
+      <!-- Expanded State -->
+      <template x-if="hud.state === 'expanded'">
+        <div class="p-4">
+          <!-- Header -->
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <div class="recording-dot"></div>
+              <div>
+                <p class="font-semibold text-gray-900" x-text="hud.currentMeeting?.title || '미팅 진행 중'"></p>
+                <p class="text-sm text-gray-500" x-text="formatTime(hud.elapsedTime)"></p>
+              </div>
+            </div>
+            <button class="btn-ghost p-2" @click="hud.state = 'idle'">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Insights List -->
+          <div class="space-y-2 max-h-[200px] overflow-y-auto">
+            <template x-for="insight in hud.insights" :key="insight">
+              <div class="p-2 bg-gray-50 rounded-lg text-sm text-gray-700">
+                <span x-text="insight"></span>
+              </div>
+            </template>
+          </div>
+
+          <!-- Footer Actions -->
+          <div class="mt-4 pt-3 border-t border-gray-200 flex gap-2">
+            <button class="btn-secondary flex-1 text-sm" @click="endMeeting()">
+              미팅 종료
+            </button>
+          </div>
+        </div>
+      </template>
+
+      <!-- Alert Level 1 -->
+      <template x-if="hud.state === 'alert-1'">
+        <div class="p-4">
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+              <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-gray-900" x-text="hud.currentAlert?.content"></p>
+              <p class="text-xs text-gray-500 mt-1">새로운 인사이트</p>
+            </div>
+            <button class="btn-ghost p-1" @click="dismissAlert()">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </template>
+
+      <!-- Alert Level 2 -->
+      <template x-if="hud.state === 'alert-2'">
+        <div class="p-4">
+          <div class="flex items-start gap-3 mb-4">
+            <div class="w-8 h-8 rounded-full bg-warning-100 flex items-center justify-center flex-shrink-0">
+              <svg class="w-4 h-4 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-semibold text-warning-800">확인 필요</p>
+              <p class="text-sm text-gray-700 mt-1" x-text="hud.currentAlert?.content"></p>
+              <p class="text-xs text-gray-500 mt-2">
+                추천 질문: "<span x-text="hud.currentAlert?.suggestedQuestion"></span>"
+              </p>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn-primary flex-1 text-sm" @click="askQuestion()">물어보기</button>
+            <button class="btn-secondary flex-1 text-sm" @click="deferAlert()">나중에</button>
+          </div>
+        </div>
+      </template>
+
+      <!-- Alert Level 3 -->
+      <template x-if="hud.state === 'alert-3'">
+        <div class="p-4">
+          <div class="flex items-start gap-3 mb-4">
+            <div class="w-8 h-8 rounded-full bg-danger-100 flex items-center justify-center flex-shrink-0">
+              <svg class="w-4 h-4 text-danger-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-semibold text-danger-800">치명적 누락</p>
+              <p class="text-sm text-gray-700 mt-1" x-text="hud.currentAlert?.content"></p>
+              <p class="text-xs text-danger-600 mt-2" x-text="hud.currentAlert?.reason"></p>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn-danger flex-1 text-sm" @click="askQuestion()">지금 확인</button>
+            <button class="btn-secondary flex-1 text-sm" @click="acceptRisk()">위험 감수</button>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- Demo Controls (for testing) -->
+    <div class="fixed bottom-4 left-4 bg-white rounded-xl shadow-lg p-4 space-y-2">
+      <p class="text-xs font-semibold text-gray-500 mb-2">Demo Controls</p>
+      <button class="btn-secondary text-xs w-full" @click="triggerAlert(1)">Alert Lv.1</button>
+      <button class="btn-secondary text-xs w-full" @click="triggerAlert(2)">Alert Lv.2</button>
+      <button class="btn-secondary text-xs w-full" @click="triggerAlert(3)">Alert Lv.3</button>
+      <button class="btn-primary text-xs w-full" @click="endMeeting()">미팅 종료</button>
+      <button class="btn-ghost text-xs w-full" @click="navigate('today')">← Today</button>
+    </div>
+  </div>
+
+  <!-- ============================================
+       Modal: Signup
+       Reference: 04_Figma Line 555-803
+       ============================================ -->
+  <template x-if="modals.signup">
+    <div class="modal-container">
+      <div class="modal-overlay" @click="closeModal('signup')"></div>
+      <div class="modal-content p-6">
+        <!-- Close Button -->
+        <button
+          class="absolute top-4 right-4 btn-ghost p-2"
+          @click="closeModal('signup')"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+
+        <!-- Header -->
+        <div class="text-center mb-6">
+          <div class="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+          </div>
+          <h2 class="text-xl font-bold text-gray-900">Onno 시작하기</h2>
+          <p class="text-sm text-gray-500 mt-1">미팅의 모든 순간을 놓치지 마세요</p>
+        </div>
+
+        <!-- OAuth Buttons -->
+        <div class="space-y-3 mb-6">
+          <button class="btn-oauth-google" @click="signupWithGoogle()">
+            <svg class="w-5 h-5 mr-3" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            구글 계정으로 1초만에 시작하기
+          </button>
+          <button class="btn-oauth-github" @click="signupWithGithub()">
+            <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 24 24">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+            </svg>
+            GitHub으로 시작하기
+          </button>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Email Form -->
+        <form @submit.prevent="signupWithEmail()" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">이메일</label>
+            <input
+              type="email"
+              x-model="signup.email"
+              class="input-field"
+              placeholder="name@company.com"
+            >
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">비밀번호</label>
+            <input
+              type="password"
+              x-model="signup.password"
+              class="input-field"
+              placeholder="8자 이상 입력하세요"
+            >
+          </div>
+          <button type="submit" class="btn-primary w-full">
+            <template x-if="!signup.loading">
+              <span>가입하기</span>
+            </template>
+            <template x-if="signup.loading">
+              <span class="flex items-center gap-2">
+                <span class="spinner"></span>
+                처리 중...
+              </span>
+            </template>
+          </button>
+        </form>
+
+        <!-- Later Link -->
+        <div class="text-center mt-4">
+          <button class="link text-sm" @click="skipSignup()">나중에 하기</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- ============================================
+       Modal: Confirmation (Part 4)
+       Reference: 04_Figma Line 3161-3419
+       ============================================ -->
+  <template x-if="modals.confirmation">
+    <div class="modal-container">
+      <div class="modal-overlay" @click="showLaterDialog()"></div>
+      <div class="modal-content xlarge p-0 max-h-[85vh] flex flex-col">
+        <!-- Header -->
+        <div class="p-6 border-b border-gray-200 flex-shrink-0">
+          <div class="flex items-start justify-between">
+            <div>
+              <h2 class="text-lg font-bold text-gray-900" x-text="confirmation.meeting?.title"></h2>
+              <p class="text-sm text-gray-500 mt-1">
+                <span x-text="confirmation.meeting?.date"></span>
+                <span class="mx-1">·</span>
+                <span x-text="confirmation.meeting?.duration + '분'"></span>
+              </p>
+            </div>
+            <button class="btn-ghost p-2" @click="showLaterDialog()">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Progress -->
+          <div class="mt-4">
+            <div class="flex items-center justify-between text-sm mb-2">
+              <span class="text-gray-600">완료된 항목</span>
+              <span class="font-medium" x-text="confirmation.filledGaps + '/' + confirmation.totalGaps"></span>
+            </div>
+            <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                class="h-full bg-success-500 transition-all duration-300"
+                :style="'width: ' + (confirmation.totalGaps > 0 ? (confirmation.filledGaps / confirmation.totalGaps * 100) : 0) + '%'"
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div class="p-6 overflow-y-auto flex-1">
+          <!-- Decisions Section -->
+          <div class="mb-6">
+            <h3 class="text-sm font-semibold text-gray-900 mb-3">핵심 결정 사항</h3>
+            <div class="space-y-3">
+              <template x-for="(decision, index) in confirmation.decisions" :key="decision.id">
+                <div
+                  class="card p-4"
+                  :class="{ 'border-success-500': decision.isComplete, 'border-warning-300': !decision.isComplete }"
+                >
+                  <div class="flex items-start gap-3">
+                    <div
+                      class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+                      :class="decision.isComplete ? 'bg-success-100 text-success-600' : 'bg-warning-100 text-warning-600'"
+                    >
+                      <template x-if="decision.isComplete">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                      </template>
+                      <template x-if="!decision.isComplete">
+                        <span class="text-xs font-semibold" x-text="index + 1"></span>
+                      </template>
+                    </div>
+                    <div class="flex-1">
+                      <p class="text-sm text-gray-900" x-text="decision.content"></p>
+
+                      <!-- Gap Fields -->
+                      <div class="mt-3 grid grid-cols-2 gap-3">
+                        <!-- Assignee -->
+                        <div>
+                          <label class="block text-xs text-gray-500 mb-1">담당자</label>
+                          <input
+                            type="text"
+                            :value="decision.assignee || ''"
+                            @input="updateDecisionField(decision.id, 'assignee', $event.target.value)"
+                            class="gap-field w-full"
+                            :class="{
+                              'empty': !decision.assignee,
+                              'focused': $el === document.activeElement,
+                              'filled': decision.assignee
+                            }"
+                            placeholder="담당자 입력"
+                          >
+                        </div>
+                        <!-- Deadline -->
+                        <div>
+                          <label class="block text-xs text-gray-500 mb-1">기한</label>
+                          <input
+                            type="date"
+                            :value="decision.deadline || ''"
+                            @input="updateDecisionField(decision.id, 'deadline', $event.target.value)"
+                            class="gap-field w-full"
+                            :class="{
+                              'empty': !decision.deadline,
+                              'focused': $el === document.activeElement,
+                              'filled': decision.deadline
+                            }"
+                          >
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- Insights Section -->
+          <div class="mb-6">
+            <h3 class="text-sm font-semibold text-gray-900 mb-3">주요 인사이트</h3>
+            <div class="card p-4 bg-gray-50">
+              <ul class="space-y-2">
+                <template x-for="insight in confirmation.insights.slice(0, 3)" :key="insight">
+                  <li class="text-sm text-gray-700 flex items-start gap-2">
+                    <svg class="w-4 h-4 text-primary-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span x-text="insight"></span>
+                  </li>
+                </template>
+              </ul>
+              <template x-if="confirmation.insights.length > 3">
+                <button class="link text-sm mt-2">+ <span x-text="confirmation.insights.length - 3"></span>개 더 보기</button>
+              </template>
+            </div>
+          </div>
+
+          <!-- Notion Option -->
+          <div class="card p-4">
+            <label class="checkbox-wrapper">
+              <input type="checkbox" x-model="confirmation.saveToNotion" class="checkbox">
+              <div class="flex-1">
+                <span class="text-sm font-medium text-gray-900">Notion에 자동 저장</span>
+                <template x-if="user.notionConnected">
+                  <p class="text-xs text-gray-500 mt-0.5" x-text="user.notionWorkspace + '에 저장'"></p>
+                </template>
+                <template x-if="!user.notionConnected">
+                  <button class="link text-xs mt-0.5" @click.prevent="openModal('notionConnect')">
+                    연결하기 (30초면 완료!)
+                  </button>
+                </template>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-6 border-t border-gray-200 flex-shrink-0">
+          <!-- Complete State -->
+          <template x-if="confirmation.state === 'complete'">
+            <div class="text-center py-4">
+              <div class="w-16 h-16 bg-success-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce-in">
+                <svg class="w-8 h-8 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+              </div>
+              <h3 class="text-lg font-bold text-gray-900">저장 완료!</h3>
+              <p class="text-sm text-gray-500 mt-1" x-show="confirmation.saveToNotion">Notion에도 저장되었습니다</p>
+              <div class="flex gap-3 mt-4">
+                <button class="btn-secondary flex-1" x-show="confirmation.saveToNotion">
+                  Notion에서 보기
+                </button>
+                <button class="btn-primary flex-1" @click="completeConfirmation()">
+                  Today로 돌아가기
+                </button>
+              </div>
+            </div>
+          </template>
+
+          <!-- Normal State -->
+          <template x-if="confirmation.state !== 'complete'">
+            <div class="flex gap-3">
+              <button class="link text-sm" @click="showLaterDialog()">나중에 처리</button>
+              <button
+                class="btn-primary flex-1"
+                :disabled="confirmation.filledGaps < confirmation.totalGaps"
+                @click="saveConfirmation()"
+              >
+                <template x-if="confirmation.state !== 'saving'">
+                  <span>확정하기</span>
+                </template>
+                <template x-if="confirmation.state === 'saving'">
+                  <span class="flex items-center gap-2">
+                    <span class="spinner border-white border-t-transparent"></span>
+                    저장 중...
+                  </span>
+                </template>
+              </button>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- ============================================
+       Dialog: Later (Part 4)
+       Reference: 04_Figma Line 3455-3501
+       ============================================ -->
+  <template x-if="modals.laterDialog">
+    <div class="modal-container">
+      <div class="modal-overlay" @click="closeModal('laterDialog')"></div>
+      <div class="modal-content p-6 max-w-sm">
+        <div class="text-center mb-6">
+          <div class="w-12 h-12 bg-warning-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-6 h-6 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900">나중에 처리할까요?</h3>
+          <p class="text-sm text-gray-500 mt-2">
+            미완료 항목이 있으면 Today 화면에서<br>다시 확인할 수 있습니다.
+          </p>
+        </div>
+        <div class="flex gap-3">
+          <button class="btn-secondary flex-1" @click="closeModal('laterDialog')">
+            계속 작성
+          </button>
+          <button class="btn-primary flex-1" @click="deferConfirmation()">
+            나중에 처리
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- ============================================
+       Modal: Preparation (Part 1.5)
+       Reference: 04_Figma Line 2093-2621
+       ============================================ -->
+  <template x-if="modals.preparation">
+    <div class="modal-container">
+      <div class="modal-overlay" @click="closeModal('preparation')"></div>
+      <div class="modal-content large p-0 max-h-[85vh] flex flex-col">
+        <!-- Header -->
+        <div class="p-6 border-b border-gray-200 flex-shrink-0">
+          <div class="flex items-start justify-between">
+            <div>
+              <p class="text-xs text-primary-600 font-medium mb-1">미팅 준비</p>
+              <h2 class="text-lg font-bold text-gray-900" x-text="preparation.meeting?.title"></h2>
+              <p class="text-sm text-gray-500 mt-1" x-text="preparation.meeting?.startTime + ' 시작'"></p>
+            </div>
+            <button class="btn-ghost p-2" @click="closeModal('preparation')">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div class="p-6 overflow-y-auto flex-1">
+          <!-- Previous Meeting Summary -->
+          <div class="mb-6">
+            <h3 class="text-sm font-semibold text-gray-900 mb-3">지난 미팅 요약</h3>
+            <div class="card p-4 bg-primary-50 border-primary-200">
+              <p class="text-sm text-gray-700" x-text="preparation.previousSummary || '이전 미팅 기록이 없습니다.'"></p>
+            </div>
+          </div>
+
+          <!-- Pending Items -->
+          <template x-if="preparation.pendingItems?.length > 0">
+            <div class="mb-6">
+              <h3 class="text-sm font-semibold text-gray-900 mb-3">미확인 항목</h3>
+              <div class="space-y-2">
+                <template x-for="item in preparation.pendingItems" :key="item">
+                  <div class="card p-3 border-warning-200 bg-warning-50">
+                    <p class="text-sm text-warning-800" x-text="item"></p>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <!-- AI Suggested Questions -->
+          <div>
+            <h3 class="text-sm font-semibold text-gray-900 mb-3">AI 추천 질문</h3>
+            <div class="space-y-2">
+              <template x-for="(question, index) in preparation.suggestedQuestions" :key="index">
+                <label class="card p-3 cursor-pointer flex items-start gap-3 hover:border-primary-300">
+                  <input
+                    type="checkbox"
+                    x-model="preparation.checkedQuestions"
+                    :value="index"
+                    class="checkbox mt-0.5"
+                  >
+                  <span class="text-sm text-gray-700" x-text="question"></span>
+                </label>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-6 border-t border-gray-200 flex-shrink-0">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-sm text-gray-500">
+              <span x-text="preparation.checkedQuestions?.length || 0"></span> / <span x-text="preparation.suggestedQuestions?.length || 0"></span> 확인됨
+            </span>
+            <div class="progress-dots">
+              <template x-for="(_, i) in preparation.suggestedQuestions" :key="i">
+                <span
+                  class="progress-dot"
+                  :class="{ 'completed': preparation.checkedQuestions?.includes(i) }"
+                ></span>
+              </template>
+            </div>
+          </div>
+          <button class="btn-primary w-full" @click="closeModal('preparation')">
+            준비 완료
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- ============================================
+       JavaScript: State Management & Event Handlers
+       ============================================ -->
+  <script>
+    function app() {
+      return {
+        // ============================================
+        // App State
+        // ============================================
+        currentScreen: 'landing', // landing | demo | today | now | search
+        isLoggedIn: false,
+        isDemoMode: true,
+
+        // ============================================
+        // User Info
+        // ============================================
+        user: {
+          id: null,
+          name: '민수',
+          email: null,
+          avatar: null,
+          notionConnected: true,
+          notionWorkspace: '민수의 워크스페이스',
+        },
+
+        // ============================================
+        // Modal State
+        // ============================================
+        modals: {
+          signup: false,
+          preparation: false,
+          confirmation: false,
+          notionConnect: false,
+          laterDialog: false,
+          shortMeeting: false,
+        },
+
+        // ============================================
+        // HUD State (Part 3)
+        // ============================================
+        hud: {
+          isActive: false,
+          state: 'idle', // idle | expanded | alert-1 | alert-2 | alert-3
+          currentMeeting: null,
+          elapsedTime: 0,
+          insightCount: 0,
+          deferredCount: 0,
+          currentAlert: null,
+          insights: [],
+          timer: null,
+        },
+
+        // ============================================
+        // Confirmation Modal State (Part 4)
+        // ============================================
+        confirmation: {
+          isOpen: false,
+          state: 'reviewing', // reviewing | filling | ready | saving | complete
+          meeting: null,
+          decisions: [],
+          insights: [],
+          totalGaps: 0,
+          filledGaps: 0,
+          saveToNotion: true,
+        },
+
+        // ============================================
+        // Preparation Modal State (Part 1.5)
+        // ============================================
+        preparation: {
+          meeting: null,
+          previousSummary: '',
+          pendingItems: [],
+          suggestedQuestions: [],
+          checkedQuestions: [],
+        },
+
+        // ============================================
+        // Signup State
+        // ============================================
+        signup: {
+          email: '',
+          password: '',
+          loading: false,
+        },
+
+        // ============================================
+        // Search State
+        // ============================================
+        search: {
+          query: '',
+          results: [],
+        },
+
+        // ============================================
+        // Meeting Data (Demo)
+        // ============================================
+        meetings: {
+          today: [
+            {
+              id: 'mtg_1',
+              title: 'A사 투자 검토 미팅',
+              company: 'A사',
+              startTime: '14:00',
+              endTime: '15:30',
+              duration: 90,
+              status: 'scheduled',
+              participants: ['김대표', '박이사'],
+              hasUnconfirmed: false,
+            },
+            {
+              id: 'mtg_2',
+              title: 'B사 기술 실사',
+              company: 'B사',
+              startTime: '16:00',
+              endTime: '17:00',
+              duration: 60,
+              status: 'scheduled',
+              participants: ['이CTO'],
+              hasUnconfirmed: false,
+            }
+          ],
+          thisWeek: [],
+          incomplete: [
+            {
+              id: 'mtg_0',
+              title: '어제 C사 미팅',
+              company: 'C사',
+              date: '2025-12-29',
+              status: 'incomplete',
+              gaps: 2,
+            }
+          ],
+        },
+
+        // ============================================
+        // Demo Data
+        // ============================================
+        demoDecisions: [
+          {
+            id: 'dec_1',
+            content: '시리즈A 500억 밸류 제안 → 합의',
+            assignee: '김철수',
+            deadline: '2025-01-15',
+            isComplete: true,
+          },
+          {
+            id: 'dec_2',
+            content: '기술 실사 일정 조율 필요',
+            assignee: null,
+            deadline: null,
+            isComplete: false,
+          },
+          {
+            id: 'dec_3',
+            content: '리드 투자자 역할 A사 담당',
+            assignee: null,
+            deadline: null,
+            isComplete: false,
+          }
+        ],
+
+        demoInsights: [
+          '창업자 실행력 평가: ⭐⭐⭐⭐⭐',
+          '시장 진입 타이밍 적절',
+          'MAU 10만, 월 성장률 15%',
+          '유료 전환율 8%',
+          'CAC $45, LTV $380'
+        ],
+
+        demoAlerts: [
+          {
+            level: 1,
+            content: 'MAU 10만, 월 성장률 15%',
+          },
+          {
+            level: 2,
+            content: '예산 승인 프로세스 미확인',
+            suggestedQuestion: '승인은 누가 하시나요?',
+          },
+          {
+            level: 3,
+            content: '계약 해지 조건 논의 안 됨',
+            reason: '법적 분쟁 가능성, 과거 2건 유사 사례',
+          }
+        ],
+
+        // ============================================
+        // Toasts
+        // ============================================
+        toasts: [],
+
+        // ============================================
+        // Methods: Navigation
+        // ============================================
+        navigate(screen) {
+          this.currentScreen = screen;
+        },
+
+        openModal(name) {
+          this.modals[name] = true;
+        },
+
+        closeModal(name) {
+          this.modals[name] = false;
+        },
+
+        // ============================================
+        // Methods: Toast
+        // ============================================
+        showToast(type, message) {
+          const id = Date.now();
+          this.toasts.push({ id, type, message });
+          setTimeout(() => this.removeToast(id), 3000);
+        },
+
+        removeToast(id) {
+          this.toasts = this.toasts.filter(t => t.id !== id);
+        },
+
+        // ============================================
+        // Methods: Demo
+        // ============================================
+        startDemo() {
+          this.isDemoMode = true;
+          this.navigate('today');
+          this.showToast('info', '데모 모드로 시작합니다');
+        },
+
+        // ============================================
+        // Methods: Auth
+        // ============================================
+        signupWithGoogle() {
+          this.signup.loading = true;
+          setTimeout(() => {
+            this.signup.loading = false;
+            this.closeModal('signup');
+            this.isLoggedIn = true;
+            this.user.email = 'minsu@gmail.com';
+            this.showToast('success', '로그인되었습니다');
+          }, 1500);
+        },
+
+        signupWithGithub() {
+          this.signup.loading = true;
+          setTimeout(() => {
+            this.signup.loading = false;
+            this.closeModal('signup');
+            this.isLoggedIn = true;
+            this.showToast('success', '로그인되었습니다');
+          }, 1500);
+        },
+
+        signupWithEmail() {
+          if (!this.signup.email || !this.signup.password) {
+            this.showToast('error', '이메일과 비밀번호를 입력하세요');
+            return;
+          }
+          this.signup.loading = true;
+          setTimeout(() => {
+            this.signup.loading = false;
+            this.closeModal('signup');
+            this.isLoggedIn = true;
+            this.user.email = this.signup.email;
+            this.showToast('success', '가입이 완료되었습니다');
+          }, 1500);
+        },
+
+        skipSignup() {
+          this.closeModal('signup');
+          this.showToast('info', '나중에 가입할 수 있습니다');
+        },
+
+        // ============================================
+        // Methods: Meeting Card Actions
+        // ============================================
+        handleMeetingCardClick(meeting) {
+          if (meeting.status === 'scheduled') {
+            this.openPreparationModal(meeting);
+          } else if (meeting.status === 'completed') {
+            // View details
+          }
+        },
+
+        openPreparationModal(meeting) {
+          this.preparation = {
+            meeting: meeting,
+            previousSummary: 'A사와의 이전 미팅에서 시리즈A 투자 조건에 대해 초기 논의를 진행했습니다. 밸류에이션과 지분 구조에 대한 추가 논의가 필요합니다.',
+            pendingItems: ['리드 투자자 결정', '실사 일정 확정'],
+            suggestedQuestions: [
+              '이번 라운드의 목표 조달 금액은 얼마인가요?',
+              '현재 다른 투자자와도 논의 중인가요?',
+              '투자금 사용 계획을 공유해 주실 수 있나요?',
+              '예상하는 마일스톤은 무엇인가요?',
+            ],
+            checkedQuestions: [],
+          };
+          this.openModal('preparation');
+        },
+
+        // ============================================
+        // Methods: HUD
+        // ============================================
+        startMeeting(meeting) {
+          this.hud.isActive = true;
+          this.hud.currentMeeting = meeting || this.meetings.today[0];
+          this.hud.state = 'idle';
+          this.hud.elapsedTime = 0;
+          this.hud.insightCount = 0;
+          this.hud.deferredCount = 0;
+          this.hud.insights = [];
+          this.navigate('now');
+
+          // Start timer
+          this.hud.timer = setInterval(() => {
+            this.hud.elapsedTime++;
+
+            // Add insights periodically (demo)
+            if (this.hud.elapsedTime % 20 === 0 && this.hud.insightCount < this.demoInsights.length) {
+              this.hud.insights.push(this.demoInsights[this.hud.insightCount]);
+              this.hud.insightCount++;
+            }
+          }, 1000);
+        },
+
+        endMeeting() {
+          if (this.hud.timer) {
+            clearInterval(this.hud.timer);
+          }
+          this.hud.isActive = false;
+          this.openConfirmationModal(this.hud.currentMeeting);
+        },
+
+        triggerAlert(level) {
+          const alert = this.demoAlerts.find(a => a.level === level);
+          this.hud.currentAlert = alert;
+          this.hud.state = `alert-${level}`;
+        },
+
+        dismissAlert() {
+          this.hud.state = 'idle';
+          this.hud.currentAlert = null;
+          this.hud.insightCount++;
+        },
+
+        askQuestion() {
+          const question = this.hud.currentAlert?.suggestedQuestion || this.hud.currentAlert?.content;
+          navigator.clipboard?.writeText(question);
+          this.showToast('success', '질문이 복사되었습니다');
+          this.dismissAlert();
+        },
+
+        deferAlert() {
+          this.hud.deferredCount++;
+          this.showToast('info', '나중에 확인합니다');
+          this.dismissAlert();
+        },
+
+        acceptRisk() {
+          this.showToast('warning', '위험을 감수합니다');
+          this.dismissAlert();
+        },
+
+        // ============================================
+        // Methods: Confirmation Modal
+        // ============================================
+        openConfirmationModal(meeting) {
+          // Calculate gaps
+          const decisions = JSON.parse(JSON.stringify(this.demoDecisions));
+          const totalGaps = decisions.reduce((count, d) => {
+            return count + (!d.assignee ? 1 : 0) + (!d.deadline ? 1 : 0);
+          }, 0);
+          const filledGaps = decisions.filter(d => d.assignee && d.deadline).length * 2;
+
+          this.confirmation = {
+            isOpen: true,
+            state: 'reviewing',
+            meeting: {
+              ...meeting,
+              date: meeting?.date || '2025-12-30',
+              duration: meeting?.duration || 90,
+            },
+            decisions: decisions,
+            insights: this.demoInsights,
+            totalGaps: totalGaps,
+            filledGaps: filledGaps,
+            saveToNotion: true,
+          };
+
+          this.navigate('today');
+          this.openModal('confirmation');
+        },
+
+        updateDecisionField(decisionId, field, value) {
+          const decision = this.confirmation.decisions.find(d => d.id === decisionId);
+          if (decision) {
+            decision[field] = value;
+            decision.isComplete = decision.assignee && decision.deadline;
+
+            // Recalculate gaps
+            this.confirmation.filledGaps = this.confirmation.decisions.reduce((count, d) => {
+              return count + (d.assignee ? 1 : 0) + (d.deadline ? 1 : 0);
+            }, 0);
+          }
+        },
+
+        saveConfirmation() {
+          this.confirmation.state = 'saving';
+          setTimeout(() => {
+            this.confirmation.state = 'complete';
+            this.showToast('success', '미팅 기록이 저장되었습니다');
+          }, 1500);
+        },
+
+        showLaterDialog() {
+          if (this.confirmation.filledGaps < this.confirmation.totalGaps) {
+            this.openModal('laterDialog');
+          } else {
+            this.closeModal('confirmation');
+          }
+        },
+
+        deferConfirmation() {
+          this.closeModal('laterDialog');
+          this.closeModal('confirmation');
+
+          // Add to incomplete list
+          if (this.confirmation.meeting && !this.meetings.incomplete.find(m => m.id === this.confirmation.meeting.id)) {
+            this.meetings.incomplete.push({
+              ...this.confirmation.meeting,
+              status: 'incomplete',
+              gaps: this.confirmation.totalGaps - this.confirmation.filledGaps,
+            });
+          }
+
+          this.showToast('info', 'Today에서 나중에 처리할 수 있습니다');
+        },
+
+        completeConfirmation() {
+          this.closeModal('confirmation');
+
+          // Remove from incomplete if exists
+          this.meetings.incomplete = this.meetings.incomplete.filter(
+            m => m.id !== this.confirmation.meeting?.id
+          );
+        },
+
+        // ============================================
+        // Methods: Search
+        // ============================================
+        performSearch() {
+          if (!this.search.query) {
+            this.search.results = [];
+            return;
+          }
+
+          // Demo search results
+          this.search.results = [
+            {
+              id: 'result_1',
+              meetingTitle: 'A사 투자 검토 미팅',
+              date: '2025-12-28',
+              highlight: `<mark class="bg-yellow-200">${this.search.query}</mark>에 대한 논의가 진행되었습니다...`,
+            },
+            {
+              id: 'result_2',
+              meetingTitle: 'B사 기술 실사',
+              date: '2025-12-27',
+              highlight: `기술 스택 관련 <mark class="bg-yellow-200">${this.search.query}</mark> 검토...`,
+            }
+          ];
+        },
+
+        // ============================================
+        // Methods: Utilities
+        // ============================================
+        getGreeting() {
+          const hour = new Date().getHours();
+          if (hour < 12) return '좋은 아침이에요';
+          if (hour < 18) return '좋은 오후예요';
+          return '좋은 저녁이에요';
+        },
+
+        getTodayDate() {
+          const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+          return new Date().toLocaleDateString('ko-KR', options);
+        },
+
+        formatTime(seconds) {
+          const mins = Math.floor(seconds / 60);
+          const secs = seconds % 60;
+          return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        },
+
+        // ============================================
+        // Init
+        // ============================================
+        init() {
+          console.log('Onno Prototype initialized');
+
+          // Start demo meeting for testing
+          // Uncomment to auto-start:
+          // setTimeout(() => this.startMeeting(), 1000);
+        }
+      }
+    }
+  </script>
+</body>
+</html>

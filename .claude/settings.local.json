@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"Get-ChildItem -Path \"\"$env:USERPROFILE\\.claude\"\" -Force | Format-Table Name, LastWriteTime, Mode\")",
+      "Bash(powershell:*)",
+      "Bash(del \"02_사용자경험_설계_v2.md\")",
+      "Bash(del \"10_Part_1.2_Expert_UX_Analysis.md\")",
+      "Bash(del \"11_Part_1.3_Expert_Signup_Analysis.md\")",
+      "Bash(dir:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run build:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

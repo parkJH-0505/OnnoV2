@@ -1,0 +1,986 @@
+// Onno - Prisma Schema (통합)
+// 버전: 2.1 (Part 1~6.4 전체 통합)
+// 생성일: 2025-12-30
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// User & Authentication
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  avatar        String?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  meetings              Meeting[]
+  integrations          Integration[]
+  settings              UserSettings?
+  notificationSettings  NotificationSettings?
+  accessibilitySettings AccessibilitySettings?
+  onboarding            UserOnboarding?
+
+  searchHistory         SearchHistory[]
+  searchAnalytics       SearchAnalytics[]
+  dataExports           DataExport[]
+  dataDeletions         DataDeletion[]
+  errorLogs             ErrorLog[]
+  longRunningOperations LongRunningOperation[]
+  emptyStateEvents      EmptyStateEvent[]
+  firstTimeMilestones   FirstTimeMilestone[]
+  emptyStateExperiments EmptyStateExperiment[]
+  accessibilityEvents   AccessibilityEvent[]
+  accessibilityAudits   AccessibilityAudit[]
+  shortcutOverrides     UserShortcutOverride[]
+  screenReaderSessions  ScreenReaderSession[]
+
+  @@map("users")
+}
+
+// ============================================
+// Meeting (Part 1, 2, 3)
+// ============================================
+
+model Meeting {
+  id            String        @id @default(cuid())
+  userId        String
+
+  title         String
+  company       String?
+  platform      Platform      @default(ZOOM)
+  status        MeetingStatus @default(SCHEDULED)
+
+  startTime     DateTime
+  endTime       DateTime?
+  duration      Int?          // 분 단위
+
+  participants  Json?         // { name, email, role }[]
+  metadata      Json?         // { zoomId, meetUrl, etc }
+
+  // Part 1.5: 준비 관련
+  prepReminderSent Boolean    @default(false)
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transcripts   Transcript[]
+  decisions     Decision[]
+  insights      Insight[]
+  actions       Action[]
+  alerts        Alert[]
+  hudSession    HudSession?
+  prep          MeetingPrep?
+  confirmation  MeetingConfirmation?
+  embeddings    MeetingEmbedding[]
+
+  @@index([userId, startTime])
+  @@index([company])
+  @@map("meetings")
+}
+
+enum Platform {
+  ZOOM
+  GOOGLE_MEET
+  TEAMS
+  OTHER
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+// ============================================
+// Meeting Prep (Part 1.5)
+// ============================================
+
+model MeetingPrep {
+  id              String     @id @default(cuid())
+  meetingId       String     @unique
+  meeting         Meeting    @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  // 준비 상태
+  status          PrepStatus @default(PENDING)
+  completedAt     DateTime?
+  skippedAt       DateTime?
+  skipReason      String?
+
+  // 선택된 질문들
+  checkedQuestions String[]
+  userQuestions    String[]
+
+  // 메트릭
+  prepTimeSeconds Int?
+
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@map("meeting_preps")
+}
+
+enum PrepStatus {
+  PENDING     // 준비 대기
+  COMPLETED   // 준비 완료
+  SKIPPED     // 건너뜀
+  EXPIRED     // 미팅 시작으로 만료
+}
+
+// ============================================
+// Transcript (Part 3 - 실시간 전사)
+// ============================================
+
+model Transcript {
+  id            String    @id @default(cuid())
+  meetingId     String
+
+  timestamp     DateTime  @default(now())
+  speaker       String    // 발화자 이름 또는 "Speaker 1"
+  text          String    @db.Text
+  confidence    Float?    // STT 신뢰도 (0-1)
+
+  meeting       Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId, timestamp])
+  @@map("transcripts")
+}
+
+// ============================================
+// Decision (Part 3, 4 - 결정 8요소)
+// ============================================
+
+model Decision {
+  id              String    @id @default(cuid())
+  meetingId       String
+  confirmationId  String?
+
+  goal          String?   @db.Text
+  evidence      Json?     // { claim, source, timestamp }[]
+  assumptions   Json?     // string[]
+  risks         Json?     // { risk, impact, probability }[]
+  unknowns      Json?     // string[]
+  decision      String?   @db.Text
+  actions       Json?     // → Action 테이블로 정규화
+  outcome       String?   @db.Text
+
+  // Part 4: 확정 모달 필드
+  content         String?
+  assignee        String?
+  deadline        DateTime?
+  source          DecisionSource @default(AI_EXTRACTED)
+  isComplete      Boolean   @default(false)
+  isEdited        Boolean   @default(false)
+  extractedFrom   String?   // 전사 텍스트 참조
+  completeness    Int       @default(0) // 0-100 (8요소 채워진 정도)
+  confidence      Float?    // AI 신뢰도
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  meeting       Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  confirmation  MeetingConfirmation? @relation(fields: [confirmationId], references: [id])
+
+  @@index([meetingId])
+  @@index([confirmationId])
+  @@map("decisions")
+}
+
+enum DecisionSource {
+  AI_EXTRACTED
+  USER_ADDED
+  EDITED
+}
+
+// ============================================
+// Insight (Part 3 - 인사이트 추출)
+// ============================================
+
+model Insight {
+  id            String       @id @default(cuid())
+  meetingId     String
+
+  type          InsightType
+  content       String       @db.Text
+  source        String?      // 발화 원문
+  timestamp     DateTime     @default(now())
+  confidence    Float?       // AI 신뢰도
+
+  metadata      Json?        // { speaker, context, etc }
+
+  meeting       Meeting      @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId, type])
+  @@map("insights")
+}
+
+enum InsightType {
+  METRIC        // 숫자, 지표 (MAU 10만)
+  CLAIM         // 주장, 사실 (경쟁사는 3곳)
+  CONCERN       // 우려 사항 (보안 걱정됨)
+  QUESTION      // 미해결 질문
+  COMMITMENT    // 약속 (다음 주까지)
+}
+
+// ============================================
+// Action (Part 3, 4 - 액션 아이템)
+// ============================================
+
+model Action {
+  id            String       @id @default(cuid())
+  meetingId     String
+
+  title         String
+  description   String?      @db.Text
+  assignee      String?      // 담당자 이름
+  assigneeEmail String?
+  dueDate       DateTime?
+  status        ActionStatus @default(PENDING)
+
+  externalId    String?      // Notion, Salesforce 등 외부 ID
+  externalUrl   String?
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  completedAt   DateTime?
+
+  meeting       Meeting      @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId, status])
+  @@index([assigneeEmail, status])
+  @@map("actions")
+}
+
+enum ActionStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// ============================================
+// Alert (Part 3 - 갭 감지 알림)
+// ============================================
+
+model Alert {
+  id                String         @id @default(cuid())
+  meetingId         String
+
+  level             Int            // 1, 2, 3
+  title             String
+  message           String         @db.Text
+  suggestedQuestion String?        @db.Text
+  reason            Json?          // string[]
+
+  shown             Boolean        @default(false)
+  response          AlertResponse? // 사용자 응답
+
+  createdAt         DateTime       @default(now())
+
+  meeting           Meeting        @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId, createdAt])
+  @@map("alerts")
+}
+
+enum AlertResponse {
+  ASKED         // 물어봄
+  DISMISSED     // 무시
+  RISK_ACCEPTED // 위험 감수 (Level 3)
+}
+
+// ============================================
+// HUD Session (Part 3, 6.1)
+// ============================================
+
+model HudSession {
+  id                    String    @id @default(cuid())
+  meetingId             String    @unique
+  meeting               Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  // 세션 상태
+  status                String    @default("idle") // idle, active, paused, completed
+  startedAt             DateTime?
+  endedAt               DateTime?
+
+  // 오디오 설정
+  audioSource           String?   // system, microphone, both
+  audioQualityMode      String?   // HIGH, LOW, AUTO
+
+  // Part 6.1: 폴백 모드 필드
+  fallbackMode          String?   // LOCAL_BUFFER, BASIC_SUMMARY, null
+  fallbackActivatedAt   DateTime?
+  lastReconnectAttempt  DateTime?
+
+  // 메트릭
+  transcriptCount       Int       @default(0)
+  alertCount            Int       @default(0)
+  insightCount          Int       @default(0)
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("hud_sessions")
+}
+
+// ============================================
+// Meeting Confirmation (Part 4)
+// ============================================
+
+model MeetingConfirmation {
+  id                String             @id @default(cuid())
+  meetingId         String             @unique
+  meeting           Meeting            @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  // 확정 상태
+  status            ConfirmationStatus @default(PENDING)
+  confirmedAt       DateTime?
+  deferredAt        DateTime?
+
+  // 결정 사항
+  decisions         Decision[]
+
+  // Notion 통합
+  notionPageId      String?
+  notionPageUrl     String?
+  notionSavedAt     DateTime?
+  notionError       String?
+
+  // 메타데이터
+  totalGaps         Int                @default(0)
+  filledGaps        Int                @default(0)
+  timeToConfirm     Int?               // 초 단위
+
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@map("meeting_confirmations")
+}
+
+enum ConfirmationStatus {
+  PENDING
+  IN_PROGRESS
+  CONFIRMED
+  DEFERRED
+  SKIPPED
+}
+
+// ============================================
+// Integration (Part 1, 5.2 - 외부 도구 연동)
+// ============================================
+
+model Integration {
+  id              String          @id @default(cuid())
+  userId          String
+  provider        String          // notion, google_calendar, outlook, salesforce, slack
+
+  accessToken     String?         @db.Text  // encrypted
+  refreshToken    String?         @db.Text  // encrypted
+  tokenExpiresAt  DateTime?
+
+  enabled         Boolean         @default(true)
+  credentials     String?         @db.Text  // 암호화된 토큰 (레거시)
+  metadata        Json?           // { workspaceId, databaseId, etc }
+
+  // 계정 정보
+  accountEmail    String?
+  accountName     String?
+
+  // Notion 전용
+  notionDatabaseId String?
+  notionWorkspace  String?
+
+  connectedAt     DateTime        @default(now())
+  lastSyncedAt    DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
+  @@index([provider])
+  @@map("integrations")
+}
+
+// ============================================
+// Integration Event (Part 5.2)
+// ============================================
+
+model IntegrationEvent {
+  id          String   @id @default(cuid())
+  userId      String
+  provider    String
+  eventType   String   // oauth_started, connected, disconnected, refresh_failed, sync_completed
+  metadata    Json?
+  timestamp   DateTime @default(now())
+
+  @@index([userId, timestamp(sort: Desc)])
+  @@index([provider, eventType])
+  @@map("integration_events")
+}
+
+// ============================================
+// Embedding (Part 5 - 벡터 검색용)
+// ============================================
+
+model Embedding {
+  id            String    @id @default(cuid())
+  meetingId     String
+  chunkIndex    Int       // 분할된 전사의 인덱스
+
+  text          String    @db.Text
+  vectorId      String    // Pinecone의 Vector ID
+
+  createdAt     DateTime  @default(now())
+
+  @@unique([meetingId, chunkIndex])
+  @@index([meetingId])
+  @@map("embeddings")
+}
+
+// ============================================
+// Meeting Embedding (Part 5)
+// ============================================
+
+model MeetingEmbedding {
+  id        String  @id @default(cuid())
+  meetingId String
+  segmentId String
+  text      String  @db.Text
+  embedding Bytes   // 벡터 데이터 (실제로는 Pinecone에 저장)
+
+  meeting   Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([meetingId])
+  @@map("meeting_embeddings")
+}
+
+// ============================================
+// Search History (Part 5)
+// ============================================
+
+model SearchHistory {
+  id          String   @id @default(cuid())
+  userId      String
+  query       String
+  resultCount Int
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("search_history")
+}
+
+// ============================================
+// Search Analytics (Part 5)
+// ============================================
+
+model SearchAnalytics {
+  id                 String   @id @default(cuid())
+  userId             String
+  query              String
+  queryType          String   // keyword, natural, time, person, decision_element
+  semanticSuccess    Boolean
+  resultCount        Int
+  clickedResultIndex Int?
+  timeToClickMs      Int?
+  searchTimeMs       Int
+  filterUsed         Boolean
+  createdAt          DateTime @default(now())
+
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([queryType])
+  @@map("search_analytics")
+}
+
+// ============================================
+// User Settings (Part 5.2)
+// ============================================
+
+model UserSettings {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+
+  // 데이터 프라이버시
+  dataRetentionDays Int      @default(365)
+  shareAnalytics    Boolean  @default(true)
+  allowAiTraining   Boolean  @default(false)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+// ============================================
+// Notification Settings (Part 5.2)
+// ============================================
+
+model NotificationSettings {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+
+  frequency       String   @default("medium") // low, medium, high
+
+  // 미팅 전
+  prepReminderEnabled   Boolean @default(true)
+  prepReminderMinutes   Int     @default(15)
+  calendarSyncEnabled   Boolean @default(true)
+
+  // 미팅 중
+  hudAlertsEnabled      Boolean @default(true)
+  gapDetectionEnabled   Boolean @default(true)
+  suggestionLevel       String  @default("balanced") // minimal, balanced, proactive
+
+  // 미팅 후
+  summaryReadyEnabled       Boolean @default(true)
+  actionItemReminderEnabled Boolean @default(true)
+  followUpSuggestionEnabled Boolean @default(false)
+
+  // 방해 금지
+  dndEnabled        Boolean @default(false)
+  dndStartTime      String? // "22:00"
+  dndEndTime        String? // "08:00"
+  dndWeekendsOff    Boolean @default(false)
+
+  // 채널
+  inAppEnabled          Boolean @default(true)
+  emailEnabled          Boolean @default(true)
+  emailDigestFrequency  String  @default("daily") // realtime, daily, weekly, off
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_settings")
+}
+
+// ============================================
+// Settings Event (Part 5.2)
+// ============================================
+
+model SettingsEvent {
+  id          String   @id @default(cuid())
+  userId      String
+  category    String   // profile, notification, integration, account, data_privacy
+  action      String   // opened, updated, saved, cancelled, password_changed
+  changes     Json?
+  metadata    Json?
+  timestamp   DateTime @default(now())
+
+  @@index([userId, timestamp(sort: Desc)])
+  @@index([category, action])
+  @@map("settings_events")
+}
+
+// ============================================
+// Data Export (Part 5.2)
+// ============================================
+
+model DataExport {
+  id            String    @id @default(cuid())
+  userId        String
+  status        String    @default("pending") // pending, processing, completed, failed
+  format        String    @default("zip")
+
+  downloadUrl   String?
+  fileSizeBytes BigInt?
+
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+  expiresAt     DateTime?
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("data_exports")
+}
+
+// ============================================
+// Data Deletion (Part 5.2)
+// ============================================
+
+model DataDeletion {
+  id          String    @id @default(cuid())
+  userId      String
+  dataType    String    // meetings, decisions, transcripts, all
+  dateRange   Json?
+  status      String    @default("pending") // pending, confirmed, processing, completed, cancelled
+
+  scheduledAt DateTime
+  confirmedAt DateTime?
+  completedAt DateTime?
+  cancelledAt DateTime?
+
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([scheduledAt, status])
+  @@map("data_deletions")
+}
+
+// ============================================
+// Account Deletion Log (Part 5.2)
+// ============================================
+
+model AccountDeletionLog {
+  id                         String    @id @default(cuid())
+  userId                     String
+  originalEmail              String
+  reason                     String?
+  deletedAt                  DateTime
+  scheduledPermanentDeleteAt DateTime
+  permanentlyDeletedAt       DateTime?
+
+  @@index([scheduledPermanentDeleteAt, permanentlyDeletedAt])
+  @@map("account_deletion_logs")
+}
+
+// ============================================
+// Error Log (Part 6.1)
+// ============================================
+
+model ErrorLog {
+  id                  String    @id @default(uuid())
+  errorId             String    @unique
+  type                String
+  domain              String
+  severity            String
+  code                String
+  message             String
+  technicalMessage    String
+  userId              String?
+  sessionId           String?
+  meetingId           String?
+  part                String?
+  component           String?
+  action              String?
+  metadata            Json?
+  stackTrace          String?   @db.Text
+  recoveryAttempted   Boolean   @default(false)
+  recoveryStrategy    String?
+  recoveryResult      String?   // SUCCESS, FAILED, null
+  recoveryDetails     String?
+  recoveryAttemptedAt DateTime?
+  userAgent           String?
+  ipAddress           String?
+  createdAt           DateTime  @default(now())
+
+  user                User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([domain])
+  @@index([severity])
+  @@index([type])
+  @@index([createdAt])
+  @@index([code])
+  @@map("error_logs")
+}
+
+// ============================================
+// Long Running Operation (Part 6.2)
+// ============================================
+
+model LongRunningOperation {
+  id          String    @id @default(uuid())
+  type        String    // meeting_analysis, bulk_export, notion_sync 등
+  userId      String
+  status      String    @default("queued") // queued, processing, completed, failed, cancelled
+  progress    Int       @default(0) // 0-100
+  metadata    Json?     // 작업별 추가 데이터
+  result      Json?     // 완료 시 결과
+  error       Json?     // 실패 시 에러 정보
+  createdAt   DateTime  @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([createdAt])
+  @@index([type, status])
+  @@map("long_running_operations")
+}
+
+// ============================================
+// Loading Metric (Part 6.2)
+// ============================================
+
+model LoadingMetric {
+  id            String   @id @default(uuid())
+  endpoint      String
+  method        String
+  duration      Int      // 밀리초
+  status        String   // success, error, cancelled, timeout
+  timestamp     DateTime @default(now())
+  userId        String?
+  operationType String?
+  dataSize      Int?     // bytes
+  cacheHit      Boolean  @default(false)
+
+  @@index([endpoint, timestamp])
+  @@index([userId, timestamp])
+  @@index([status, timestamp])
+  @@map("loading_metrics")
+}
+
+// ============================================
+// Optimistic Rollback (Part 6.2)
+// ============================================
+
+model OptimisticRollback {
+  id            String   @id @default(uuid())
+  userId        String
+  action        String   // 원래 액션 (update_decision, confirm_action 등)
+  entityType    String   // 엔티티 타입 (decision, action, meeting 등)
+  entityId      String   // 엔티티 ID
+  originalData  Json     // 롤백된 원본 데이터
+  attemptedData Json     // 시도했던 데이터
+  errorCode     String   // 실패 사유
+  errorMessage  String
+  rolledBackAt  DateTime @default(now())
+
+  @@index([userId, rolledBackAt])
+  @@index([entityType, entityId])
+  @@index([errorCode])
+  @@map("optimistic_rollbacks")
+}
+
+// ============================================
+// Empty State Event (Part 6.3)
+// ============================================
+
+model EmptyStateEvent {
+  id          String   @id @default(uuid())
+  userId      String
+  eventType   String   // empty_state_shown, cta_clicked, dismissed, navigated, bounced
+  context     String   // today_meetings, search_results, decisions_list 등
+  reason      String   // first_time, no_data, filtered_out, search_no_match 등
+  action      String?  // 클릭된 CTA 액션 (navigate:/, oauth:google 등)
+  metadata    Json?
+  sessionId   String?
+  dwellTimeMs Int?     // 체류 시간 (밀리초)
+  timestamp   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp])
+  @@index([context, timestamp])
+  @@index([eventType, timestamp])
+  @@index([reason, timestamp])
+  @@index([sessionId])
+  @@map("empty_state_events")
+}
+
+// ============================================
+// User Onboarding (Part 6.3)
+// ============================================
+
+model UserOnboarding {
+  id                String    @id @default(uuid())
+  userId            String    @unique
+  completed         Boolean   @default(false)
+  profileCompleted  Boolean   @default(false)
+  tutorialCompleted Boolean   @default(false)
+  calendarConnected Boolean   @default(false)
+  firstMeetingDone  Boolean   @default(false)
+  integrationsDone  Boolean   @default(false)
+  progress          Int       @default(0) // 0-100
+  startedAt         DateTime  @default(now())
+  completedAt       DateTime?
+  skippedAt         DateTime?
+  lastStepAt        DateTime?
+  currentStep       String?   // 현재 온보딩 단계
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([completed])
+  @@map("user_onboarding")
+}
+
+// ============================================
+// First Time Milestone (Part 6.3)
+// ============================================
+
+model FirstTimeMilestone {
+  id          String   @id @default(uuid())
+  userId      String
+  milestone   String   // first_meeting, first_decision, first_integration 등
+  achievedAt  DateTime @default(now())
+  metadata    Json?
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, milestone])
+  @@index([userId])
+  @@index([milestone])
+  @@map("first_time_milestones")
+}
+
+// ============================================
+// Empty State Experiment (Part 6.3)
+// ============================================
+
+model EmptyStateExperiment {
+  id            String    @id @default(uuid())
+  userId        String
+  experimentId  String    // 실험 ID (empty_state_cta_v2 등)
+  variant       String    // control, variant_a, variant_b 등
+  context       String    // 적용 컨텍스트
+  assignedAt    DateTime  @default(now())
+  convertedAt   DateTime?
+  converted     Boolean   @default(false)
+  metadata      Json?
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, experimentId, context])
+  @@index([experimentId, variant])
+  @@index([userId])
+  @@map("empty_state_experiments")
+}
+
+// ============================================
+// Accessibility Settings (Part 6.4)
+// ============================================
+
+model AccessibilitySettings {
+  id                       String   @id @default(cuid())
+  userId                   String   @unique
+  user                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 모션 설정
+  reduceMotion             Boolean  @default(false)
+  reduceTransparency       Boolean  @default(false)
+
+  // 시각 설정
+  highContrast             Boolean  @default(false)
+  largeText                Boolean  @default(false)
+  textScaleFactor          Float    @default(1.0)
+
+  // 포커스 설정
+  showFocusOutline         Boolean  @default(true)
+  focusOutlineWidth        String   @default("normal") // normal | thick
+
+  // 스크린 리더 설정
+  verboseMode              Boolean  @default(false)
+  announceStatusChanges    Boolean  @default(true)
+
+  // 키보드 설정
+  keyboardShortcutsEnabled Boolean  @default(true)
+  customShortcuts          Json     @default("{}")
+  stickyKeys               Boolean  @default(false)
+
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@map("accessibility_settings")
+}
+
+// ============================================
+// User Shortcut Override (Part 6.4)
+// ============================================
+
+model UserShortcutOverride {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shortcutId      String
+  customKey       String?
+  customModifiers Json     @default("[]")
+  isEnabled       Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, shortcutId])
+  @@index([userId])
+  @@map("user_shortcut_overrides")
+}
+
+// ============================================
+// Accessibility Event (Part 6.4)
+// ============================================
+
+model AccessibilityEvent {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventType  String   // keyboard_shortcut_used, screen_reader_detected, focus_trap_* 등
+  properties Json     @default("{}")
+  sessionId  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@index([sessionId])
+  @@map("accessibility_events")
+}
+
+// ============================================
+// Accessibility Audit (Part 6.4)
+// ============================================
+
+model AccessibilityAudit {
+  id              String   @id @default(cuid())
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  url             String
+  wcagLevel       String   @default("AA") // A | AA | AAA
+  score           Float
+  violationCount  Int
+  passCount       Int
+  incompleteCount Int
+  results         Json
+  createdAt       DateTime @default(now())
+
+  @@index([url])
+  @@index([createdAt])
+  @@index([score])
+  @@map("accessibility_audits")
+}
+
+// ============================================
+// Screen Reader Session (Part 6.4)
+// ============================================
+
+model ScreenReaderSession {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  screenReaderType  String    // nvda, jaws, voiceover, talkback, unknown
+  browserInfo       String?
+  startedAt         DateTime  @default(now())
+  endedAt           DateTime?
+  pagesVisited      Int       @default(0)
+  ariaAnnouncements Int       @default(0)
+  focusEvents       Int       @default(0)
+
+  @@index([userId])
+  @@index([screenReaderType])
+  @@index([startedAt])
+  @@map("screen_reader_sessions")
+}

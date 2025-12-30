@@ -504,14 +504,12 @@ function ConsoleModeView() {
   const { hudState, transcript, zoomState, currentTime, scenario } = useDemoStore()
   const [activeTab, setActiveTab] = useState<'overview' | 'insights' | 'transcript'>('overview')
 
-  // 가상의 액션 아이템 (실제로는 store에서 관리)
   const actionItems = [
     { id: 1, text: '백엔드 팀과 API 연동 미팅 일정 조율', assignee: '이개발', status: 'pending' },
     { id: 2, text: '릴리즈 일정 1주 연기 (12/27)', assignee: '김팀장', status: 'decided' },
     { id: 3, text: 'QA 일정 12/23 시작으로 조정', assignee: '박기획', status: 'pending' },
   ]
 
-  // 가상의 리스크 항목
   const risks = [
     { id: 1, level: 'medium', text: 'API 연동 일정 미확정', suggestion: '백엔드 팀과 빠른 싱크 필요' },
     { id: 2, level: 'low', text: 'QA 기간 3일로 단축됨', suggestion: '핵심 기능 위주 테스트 권장' },
@@ -524,21 +522,21 @@ function ConsoleModeView() {
   ]
 
   return (
-    <div className="w-full h-full bg-[#0f0f13] overflow-auto">
+    <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 overflow-auto">
       {/* Header Bar */}
-      <div className="sticky top-0 z-20 bg-[#0f0f13]/95 backdrop-blur-xl border-b border-gray-800">
+      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Left - Meeting Info */}
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
+              <div className="w-11 h-11 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/25">
                 <Brain className="w-5 h-5 text-white" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-lg font-bold text-white">{zoomState.meetingTitle}</h1>
-                  <span className="flex items-center gap-1 px-2 py-0.5 bg-red-500/20 text-red-400 text-xs font-medium rounded-full">
-                    <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                  <h1 className="text-lg font-bold text-gray-900">{zoomState.meetingTitle}</h1>
+                  <span className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                     LIVE
                   </span>
                 </div>
@@ -550,17 +548,17 @@ function ConsoleModeView() {
 
             {/* Right - Quick Stats */}
             <div className="flex items-center gap-6">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-white">{hudState.qualityScore}</p>
-                <p className="text-xs text-gray-500">회의 점수</p>
+              <div className="text-center px-4 py-2 bg-gray-50 rounded-xl">
+                <p className="text-2xl font-bold text-gray-900">{hudState.qualityScore}</p>
+                <p className="text-xs text-gray-500 font-medium">회의 점수</p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-violet-400">{hudState.insights.length}</p>
-                <p className="text-xs text-gray-500">인사이트</p>
+              <div className="text-center px-4 py-2 bg-violet-50 rounded-xl">
+                <p className="text-2xl font-bold text-violet-600">{hudState.insights.length}</p>
+                <p className="text-xs text-gray-500 font-medium">인사이트</p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-amber-400">{hudState.questions.length}</p>
-                <p className="text-xs text-gray-500">미해결 질문</p>
+              <div className="text-center px-4 py-2 bg-amber-50 rounded-xl">
+                <p className="text-2xl font-bold text-amber-600">{hudState.questions.length}</p>
+                <p className="text-xs text-gray-500 font-medium">미해결 질문</p>
               </div>
             </div>
           </div>
@@ -572,10 +570,10 @@ function ConsoleModeView() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as typeof activeTab)}
                 className={cn(
-                  'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                  'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all',
                   activeTab === tab.id
-                    ? 'bg-violet-600 text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-800',
+                    ? 'bg-violet-600 text-white shadow-md shadow-violet-500/25'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100',
                 )}
               >
                 {tab.icon}
@@ -602,30 +600,30 @@ function ConsoleModeView() {
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="p-6 bg-gradient-to-r from-violet-600/20 to-purple-600/20 rounded-2xl border border-violet-500/30"
+                  className="p-6 bg-gradient-to-r from-violet-50 to-purple-50 rounded-2xl border border-violet-200 shadow-lg"
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-violet-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
                       <Zap className="w-6 h-6 text-white" />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-medium text-violet-400 uppercase">AI 개입</span>
-                        <span className="px-2 py-0.5 bg-violet-500/30 text-violet-300 text-xs rounded-full">
+                        <span className="text-xs font-semibold text-violet-600 uppercase">AI 개입</span>
+                        <span className="px-2 py-0.5 bg-violet-100 text-violet-700 text-xs font-medium rounded-full">
                           {hudState.currentIntervention.type === 'tangent' && '주제 이탈'}
                           {hudState.currentIntervention.type === 'decision_needed' && '결정 필요'}
                           {hudState.currentIntervention.type === 'time_warning' && '시간 경고'}
                         </span>
                       </div>
-                      <h3 className="text-lg font-bold text-white mb-1">
+                      <h3 className="text-lg font-bold text-gray-900 mb-1">
                         {hudState.currentIntervention.title}
                       </h3>
-                      <p className="text-sm text-gray-300 mb-3">
+                      <p className="text-sm text-gray-600 mb-3">
                         {hudState.currentIntervention.description}
                       </p>
                       {hudState.currentIntervention.suggestion && (
-                        <div className="p-3 bg-white/5 rounded-xl">
-                          <p className="text-sm text-violet-200">
+                        <div className="p-3 bg-white rounded-xl border border-violet-100">
+                          <p className="text-sm text-violet-700">
                             💡 제안: {hudState.currentIntervention.suggestion}
                           </p>
                         </div>
@@ -640,13 +638,15 @@ function ConsoleModeView() {
                 {/* Left - Real-time Feed */}
                 <div className="space-y-6">
                   {/* Latest Insights */}
-                  <div className="bg-gray-900/50 rounded-2xl border border-gray-800 overflow-hidden">
-                    <div className="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
+                  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-violet-400" />
-                        <h3 className="font-semibold text-white">실시간 인사이트</h3>
+                        <div className="w-7 h-7 bg-violet-100 rounded-lg flex items-center justify-center">
+                          <Sparkles className="w-4 h-4 text-violet-600" />
+                        </div>
+                        <h3 className="font-semibold text-gray-900">실시간 인사이트</h3>
                       </div>
-                      <span className="text-xs text-gray-500">{hudState.insights.length}개</span>
+                      <span className="text-xs text-gray-500 font-medium">{hudState.insights.length}개</span>
                     </div>
                     <div className="p-4 space-y-3 max-h-72 overflow-y-auto">
                       {hudState.insights.length > 0 ? (
@@ -658,9 +658,9 @@ function ConsoleModeView() {
                             transition={{ delay: index * 0.1 }}
                             className={cn(
                               'p-3 rounded-xl border',
-                              insight.type === 'context' && 'bg-blue-500/10 border-blue-500/30',
-                              insight.type === 'suggestion' && 'bg-green-500/10 border-green-500/30',
-                              insight.type === 'alert' && 'bg-amber-500/10 border-amber-500/30',
+                              insight.type === 'context' && 'bg-blue-50 border-blue-100',
+                              insight.type === 'suggestion' && 'bg-emerald-50 border-emerald-100',
+                              insight.type === 'alert' && 'bg-amber-50 border-amber-100',
                             )}
                           >
                             <div className="flex items-start gap-2">
@@ -669,13 +669,15 @@ function ConsoleModeView() {
                                 {insight.type === 'suggestion' && '💡'}
                                 {insight.type === 'alert' && '⚠️'}
                               </span>
-                              <p className="text-sm text-gray-200">{insight.content}</p>
+                              <p className="text-sm text-gray-700">{insight.content}</p>
                             </div>
                           </motion.div>
                         ))
                       ) : (
                         <div className="text-center py-8">
-                          <Sparkles className="w-8 h-8 text-gray-600 mx-auto mb-2" />
+                          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <Sparkles className="w-6 h-6 text-gray-400" />
+                          </div>
                           <p className="text-sm text-gray-500">재생을 시작하면<br />AI 인사이트가 표시됩니다</p>
                         </div>
                       )}
@@ -683,14 +685,16 @@ function ConsoleModeView() {
                   </div>
 
                   {/* Unresolved Questions */}
-                  <div className="bg-gray-900/50 rounded-2xl border border-gray-800 overflow-hidden">
-                    <div className="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
+                  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <HelpCircle className="w-4 h-4 text-amber-400" />
-                        <h3 className="font-semibold text-white">미해결 질문</h3>
+                        <div className="w-7 h-7 bg-amber-100 rounded-lg flex items-center justify-center">
+                          <HelpCircle className="w-4 h-4 text-amber-600" />
+                        </div>
+                        <h3 className="font-semibold text-gray-900">미해결 질문</h3>
                       </div>
                       {hudState.questions.length > 0 && (
-                        <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs font-medium rounded-full">
+                        <span className="px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full">
                           {hudState.questions.length}개
                         </span>
                       )}
@@ -702,10 +706,10 @@ function ConsoleModeView() {
                             key={question.id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/30"
+                            className="p-3 bg-amber-50 rounded-xl border border-amber-100"
                           >
-                            <p className="text-xs text-amber-400 font-medium mb-1">{question.speaker}</p>
-                            <p className="text-sm text-gray-200">&ldquo;{question.content}&rdquo;</p>
+                            <p className="text-xs text-amber-700 font-semibold mb-1">{question.speaker}</p>
+                            <p className="text-sm text-gray-700">&ldquo;{question.content}&rdquo;</p>
                           </motion.div>
                         ))
                       ) : (
@@ -720,11 +724,13 @@ function ConsoleModeView() {
                 {/* Right - Actions & Risks */}
                 <div className="space-y-6">
                   {/* Action Items */}
-                  <div className="bg-gray-900/50 rounded-2xl border border-gray-800 overflow-hidden">
-                    <div className="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
+                  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-400" />
-                        <h3 className="font-semibold text-white">결정 및 액션 아이템</h3>
+                        <div className="w-7 h-7 bg-emerald-100 rounded-lg flex items-center justify-center">
+                          <CheckCircle className="w-4 h-4 text-emerald-600" />
+                        </div>
+                        <h3 className="font-semibold text-gray-900">결정 및 액션 아이템</h3>
                       </div>
                     </div>
                     <div className="p-4 space-y-2">
@@ -734,22 +740,22 @@ function ConsoleModeView() {
                           className={cn(
                             'p-3 rounded-xl border flex items-start gap-3',
                             item.status === 'decided'
-                              ? 'bg-green-500/10 border-green-500/30'
-                              : 'bg-gray-800/50 border-gray-700/50',
+                              ? 'bg-emerald-50 border-emerald-100'
+                              : 'bg-gray-50 border-gray-100',
                           )}
                         >
                           <div className={cn(
                             'w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5',
-                            item.status === 'decided' ? 'bg-green-500' : 'bg-gray-600',
+                            item.status === 'decided' ? 'bg-emerald-500' : 'bg-gray-300',
                           )}>
                             {item.status === 'decided' ? (
                               <Check className="w-3 h-3 text-white" />
                             ) : (
-                              <div className="w-2 h-2 bg-gray-400 rounded-full" />
+                              <div className="w-2 h-2 bg-white rounded-full" />
                             )}
                           </div>
                           <div className="flex-1">
-                            <p className="text-sm text-gray-200">{item.text}</p>
+                            <p className="text-sm text-gray-800">{item.text}</p>
                             <p className="text-xs text-gray-500 mt-1">담당: {item.assignee}</p>
                           </div>
                         </div>
@@ -758,11 +764,13 @@ function ConsoleModeView() {
                   </div>
 
                   {/* Risk Alerts */}
-                  <div className="bg-gray-900/50 rounded-2xl border border-gray-800 overflow-hidden">
-                    <div className="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
+                  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-orange-400" />
-                        <h3 className="font-semibold text-white">리스크 감지</h3>
+                        <div className="w-7 h-7 bg-orange-100 rounded-lg flex items-center justify-center">
+                          <AlertTriangle className="w-4 h-4 text-orange-600" />
+                        </div>
+                        <h3 className="font-semibold text-gray-900">리스크 감지</h3>
                       </div>
                     </div>
                     <div className="p-4 space-y-3">
@@ -771,54 +779,54 @@ function ConsoleModeView() {
                           key={risk.id}
                           className={cn(
                             'p-3 rounded-xl border',
-                            risk.level === 'high' && 'bg-red-500/10 border-red-500/30',
-                            risk.level === 'medium' && 'bg-orange-500/10 border-orange-500/30',
-                            risk.level === 'low' && 'bg-yellow-500/10 border-yellow-500/30',
+                            risk.level === 'high' && 'bg-red-50 border-red-100',
+                            risk.level === 'medium' && 'bg-orange-50 border-orange-100',
+                            risk.level === 'low' && 'bg-yellow-50 border-yellow-100',
                           )}
                         >
                           <div className="flex items-center gap-2 mb-1">
                             <span className={cn(
-                              'px-1.5 py-0.5 text-[10px] font-bold uppercase rounded',
+                              'px-2 py-0.5 text-[10px] font-bold uppercase rounded',
                               risk.level === 'high' && 'bg-red-500 text-white',
                               risk.level === 'medium' && 'bg-orange-500 text-white',
                               risk.level === 'low' && 'bg-yellow-500 text-gray-900',
                             )}>
                               {risk.level}
                             </span>
-                            <p className="text-sm font-medium text-gray-200">{risk.text}</p>
+                            <p className="text-sm font-medium text-gray-800">{risk.text}</p>
                           </div>
-                          <p className="text-xs text-gray-400 ml-9">→ {risk.suggestion}</p>
+                          <p className="text-xs text-gray-500 ml-11">→ {risk.suggestion}</p>
                         </div>
                       ))}
                     </div>
                   </div>
 
                   {/* Participants Grid */}
-                  <div className="bg-gray-900/50 rounded-2xl border border-gray-800 overflow-hidden">
-                    <div className="px-5 py-4 border-b border-gray-800">
-                      <h3 className="font-semibold text-white">참석자 ({zoomState.participants.length})</h3>
+                  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div className="px-5 py-4 border-b border-gray-100">
+                      <h3 className="font-semibold text-gray-900">참석자 ({zoomState.participants.length})</h3>
                     </div>
                     <div className="p-4 grid grid-cols-2 gap-2">
                       {zoomState.participants.map((p) => (
                         <div
                           key={p.id}
                           className={cn(
-                            'flex items-center gap-2 p-2 rounded-lg transition-colors',
-                            p.isSpeaking ? 'bg-green-500/10' : 'bg-gray-800/30',
+                            'flex items-center gap-2 p-2.5 rounded-xl transition-colors',
+                            p.isSpeaking ? 'bg-emerald-50 border border-emerald-100' : 'bg-gray-50',
                           )}
                         >
                           <div className={cn(
                             'w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold',
                             p.isSpeaking
-                              ? 'bg-green-500 ring-2 ring-green-400/50'
-                              : 'bg-gradient-to-br from-blue-500 to-purple-600',
+                              ? 'bg-emerald-500 ring-2 ring-emerald-300'
+                              : 'bg-gradient-to-br from-violet-500 to-purple-600',
                           )}>
                             {p.name.charAt(0)}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-gray-200 truncate">{p.name}</p>
+                            <p className="text-sm text-gray-800 truncate font-medium">{p.name}</p>
                             {p.isSpeaking && (
-                              <p className="text-[10px] text-green-400">발언 중</p>
+                              <p className="text-[10px] text-emerald-600 font-medium">발언 중</p>
                             )}
                           </div>
                         </div>
@@ -837,9 +845,9 @@ function ConsoleModeView() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              <div className="bg-gray-900/50 rounded-2xl border border-gray-800 overflow-hidden">
-                <div className="px-5 py-4 border-b border-gray-800">
-                  <h3 className="font-semibold text-white">AI가 분석한 회의 인사이트</h3>
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100">
+                  <h3 className="font-semibold text-gray-900">AI가 분석한 회의 인사이트</h3>
                   <p className="text-sm text-gray-500 mt-1">Onno가 실시간으로 파악한 중요 정보들</p>
                 </div>
                 <div className="p-6 space-y-4">
@@ -852,44 +860,44 @@ function ConsoleModeView() {
                         transition={{ delay: index * 0.05 }}
                         className={cn(
                           'p-4 rounded-xl border',
-                          insight.type === 'context' && 'bg-blue-500/10 border-blue-500/30',
-                          insight.type === 'suggestion' && 'bg-green-500/10 border-green-500/30',
-                          insight.type === 'alert' && 'bg-amber-500/10 border-amber-500/30',
+                          insight.type === 'context' && 'bg-blue-50 border-blue-100',
+                          insight.type === 'suggestion' && 'bg-emerald-50 border-emerald-100',
+                          insight.type === 'alert' && 'bg-amber-50 border-amber-100',
                         )}
                       >
                         <div className="flex items-start gap-3">
                           <div className={cn(
                             'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
-                            insight.type === 'context' && 'bg-blue-500/20',
-                            insight.type === 'suggestion' && 'bg-green-500/20',
-                            insight.type === 'alert' && 'bg-amber-500/20',
+                            insight.type === 'context' && 'bg-blue-100',
+                            insight.type === 'suggestion' && 'bg-emerald-100',
+                            insight.type === 'alert' && 'bg-amber-100',
                           )}>
-                            {insight.type === 'context' && <FileText className="w-5 h-5 text-blue-400" />}
-                            {insight.type === 'suggestion' && <Sparkles className="w-5 h-5 text-green-400" />}
-                            {insight.type === 'alert' && <AlertTriangle className="w-5 h-5 text-amber-400" />}
+                            {insight.type === 'context' && <FileText className="w-5 h-5 text-blue-600" />}
+                            {insight.type === 'suggestion' && <Sparkles className="w-5 h-5 text-emerald-600" />}
+                            {insight.type === 'alert' && <AlertTriangle className="w-5 h-5 text-amber-600" />}
                           </div>
                           <div className="flex-1">
                             <span className={cn(
-                              'text-xs font-medium uppercase',
-                              insight.type === 'context' && 'text-blue-400',
-                              insight.type === 'suggestion' && 'text-green-400',
-                              insight.type === 'alert' && 'text-amber-400',
+                              'text-xs font-semibold uppercase',
+                              insight.type === 'context' && 'text-blue-600',
+                              insight.type === 'suggestion' && 'text-emerald-600',
+                              insight.type === 'alert' && 'text-amber-600',
                             )}>
                               {insight.type === 'context' && '맥락 정보'}
                               {insight.type === 'suggestion' && '제안'}
                               {insight.type === 'alert' && '주의'}
                             </span>
-                            <p className="text-gray-200 mt-1">{insight.content}</p>
+                            <p className="text-gray-700 mt-1">{insight.content}</p>
                           </div>
                         </div>
                       </motion.div>
                     ))
                   ) : (
                     <div className="text-center py-16">
-                      <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Sparkles className="w-8 h-8 text-gray-600" />
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Sparkles className="w-8 h-8 text-gray-400" />
                       </div>
-                      <h3 className="text-lg font-semibold text-gray-400 mb-2">아직 인사이트가 없습니다</h3>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">아직 인사이트가 없습니다</h3>
                       <p className="text-sm text-gray-500">데모를 재생하면 AI가 회의를 분석하여<br />인사이트를 제공합니다</p>
                     </div>
                   )}
@@ -905,9 +913,9 @@ function ConsoleModeView() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              <div className="bg-gray-900/50 rounded-2xl border border-gray-800 overflow-hidden">
-                <div className="px-5 py-4 border-b border-gray-800">
-                  <h3 className="font-semibold text-white">실시간 회의록</h3>
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-100">
+                  <h3 className="font-semibold text-gray-900">실시간 회의록</h3>
                   <p className="text-sm text-gray-500 mt-1">AI가 자동으로 기록하는 회의 내용</p>
                 </div>
                 <div className="p-6 space-y-4 max-h-[600px] overflow-y-auto">
@@ -920,23 +928,23 @@ function ConsoleModeView() {
                         transition={{ delay: index * 0.02 }}
                         className="flex gap-4"
                       >
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-md">
                           {entry.speaker.charAt(0)}
                         </div>
-                        <div className="flex-1">
+                        <div className="flex-1 bg-gray-50 rounded-xl p-3">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-violet-400">{entry.speaker}</span>
+                            <span className="font-semibold text-violet-600">{entry.speaker}</span>
                           </div>
-                          <p className="text-gray-200">{entry.content}</p>
+                          <p className="text-gray-700">{entry.content}</p>
                         </div>
                       </motion.div>
                     ))
                   ) : (
                     <div className="text-center py-16">
-                      <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <FileText className="w-8 h-8 text-gray-600" />
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <FileText className="w-8 h-8 text-gray-400" />
                       </div>
-                      <h3 className="text-lg font-semibold text-gray-400 mb-2">회의록 대기 중</h3>
+                      <h3 className="text-lg font-semibold text-gray-700 mb-2">회의록 대기 중</h3>
                       <p className="text-sm text-gray-500">데모를 재생하면 실시간으로<br />회의 내용이 기록됩니다</p>
                     </div>
                   )}

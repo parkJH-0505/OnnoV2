@@ -39,17 +39,14 @@ export function OnnoHUD() {
 
   const { mode, position, insights, questions, qualityScore, currentIntervention } = hudState
 
-  // 알림 표시 상태 (축소/확장 모두 HUD 외부에 표시)
   const [showAlert, setShowAlert] = useState(false)
-  const [alertExpanded, setAlertExpanded] = useState(false) // 자세히 보기 상태
+  const [alertExpanded, setAlertExpanded] = useState(false)
 
-  // 개입 알림이 발생하면 표시
   useEffect(() => {
     if (currentIntervention) {
       setShowAlert(true)
       setAlertExpanded(false)
 
-      // 자동 숨김 타이머 (10초)
       const timer = setTimeout(() => {
         if (!alertExpanded) {
           setShowAlert(false)
@@ -70,20 +67,18 @@ export function OnnoHUD() {
   const meetingSeconds = Math.floor((currentTime % 60000) / 1000)
 
   const handleAdopt = () => {
-    // 채택 처리 (실제로는 store에 저장)
     console.log('채택:', currentIntervention?.title)
     setShowAlert(false)
     dismissIntervention()
   }
 
   const handleDefer = () => {
-    // 보류 처리
     console.log('보류:', currentIntervention?.title)
     setShowAlert(false)
     dismissIntervention()
   }
 
-  const hudWidth = mode === 'minimized' ? 320 : 400
+  const hudWidth = mode === 'minimized' ? 320 : 420
 
   return (
     <motion.div
@@ -108,15 +103,15 @@ export function OnnoHUD() {
     >
       {/* 메인 HUD */}
       <div className="relative">
-        {/* Glow effect */}
-        <div className="absolute -inset-1 bg-gradient-to-r from-violet-600/20 via-purple-600/20 to-fuchsia-600/20 rounded-3xl blur-xl opacity-70" />
+        {/* Soft shadow */}
+        <div className="absolute -inset-2 bg-violet-500/10 rounded-3xl blur-2xl" />
 
         <div
           className={cn(
             'relative w-full rounded-2xl overflow-hidden',
-            'bg-gray-900/95 backdrop-blur-2xl',
-            'border border-white/10',
-            'shadow-2xl shadow-purple-900/30',
+            'bg-white/95 backdrop-blur-xl',
+            'border border-gray-200/80',
+            'shadow-xl shadow-gray-900/10',
           )}
         >
           <AnimatePresence mode="wait">
@@ -148,7 +143,7 @@ export function OnnoHUD() {
         </div>
       </div>
 
-      {/* 알림 카드 (HUD 아래쪽, 같이 드래그됨) */}
+      {/* 알림 카드 */}
       <AnimatePresence>
         {showAlert && currentIntervention && (
           <AlertCard
@@ -169,7 +164,6 @@ export function OnnoHUD() {
   )
 }
 
-// HUD 외부 하단에 표시되는 알림 카드
 function AlertCard({
   intervention,
   isExpanded,
@@ -191,34 +185,42 @@ function AlertCard({
     tangent: {
       icon: <AlertTriangle className="w-5 h-5" />,
       color: 'bg-amber-500',
+      lightBg: 'bg-amber-50',
+      textColor: 'text-amber-700',
+      borderColor: 'border-amber-200',
       gradient: 'from-amber-500 to-orange-500',
-      border: 'border-amber-500/30',
       label: '주제 이탈',
     },
     decision_needed: {
       icon: <Target className="w-5 h-5" />,
       color: 'bg-blue-500',
+      lightBg: 'bg-blue-50',
+      textColor: 'text-blue-700',
+      borderColor: 'border-blue-200',
       gradient: 'from-blue-500 to-indigo-500',
-      border: 'border-blue-500/30',
       label: '결정 필요',
     },
     time_warning: {
       icon: <Clock className="w-5 h-5" />,
-      color: 'bg-red-500',
-      gradient: 'from-red-500 to-pink-500',
-      border: 'border-red-500/30',
+      color: 'bg-rose-500',
+      lightBg: 'bg-rose-50',
+      textColor: 'text-rose-700',
+      borderColor: 'border-rose-200',
+      gradient: 'from-rose-500 to-pink-500',
       label: '시간 알림',
     },
     context: {
       icon: <Lightbulb className="w-5 h-5" />,
-      color: 'bg-green-500',
-      gradient: 'from-green-500 to-emerald-500',
-      border: 'border-green-500/30',
+      color: 'bg-emerald-500',
+      lightBg: 'bg-emerald-50',
+      textColor: 'text-emerald-700',
+      borderColor: 'border-emerald-200',
+      gradient: 'from-emerald-500 to-teal-500',
       label: '컨텍스트',
     },
   }
 
-  const { icon, color, gradient, border, label } = config[intervention.type]
+  const { icon, color, lightBg, textColor, borderColor, gradient, label } = config[intervention.type]
 
   return (
     <motion.div
@@ -229,49 +231,50 @@ function AlertCard({
       className="mt-3"
       style={{ width: hudWidth }}
     >
-      {/* 말풍선 화살표 (위쪽을 가리킴) */}
+      {/* 화살표 */}
       <div className={cn(
-        'absolute -top-2 left-8 w-4 h-4 bg-gray-900/95 border-l border-t transform rotate-45',
-        border,
+        'absolute -top-2 left-8 w-4 h-4 bg-white border-l border-t transform rotate-45',
+        borderColor,
       )} />
 
       <div className={cn(
-        'relative bg-gray-900/95 backdrop-blur-xl rounded-xl border shadow-2xl overflow-hidden',
-        border,
+        'relative bg-white rounded-2xl border shadow-xl shadow-gray-900/10 overflow-hidden',
+        borderColor,
       )}>
-        {/* 헤더 - 항상 표시 */}
-        <div className="p-3">
+        {/* 컬러 액센트 바 */}
+        <div className={cn('h-1 w-full bg-gradient-to-r', gradient)} />
+
+        <div className="p-4">
           <div className="flex items-start gap-3">
-            <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center text-white flex-shrink-0', color)}>
+            <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center text-white flex-shrink-0', color)}>
               {icon}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <span className={cn(
-                  'text-[10px] font-bold uppercase px-1.5 py-0.5 rounded text-white',
-                  color,
+                  'text-[10px] font-bold uppercase px-2 py-0.5 rounded-full',
+                  lightBg, textColor,
                 )}>
                   {label}
                 </span>
-                <span className="text-[10px] text-gray-500">Onno AI</span>
+                <span className="text-[10px] text-gray-400 font-medium">Onno AI</span>
               </div>
-              <p className="text-sm font-medium text-white">{intervention.title}</p>
+              <p className="text-sm font-semibold text-gray-900">{intervention.title}</p>
               {!isExpanded && (
-                <p className="text-xs text-gray-400 mt-1 line-clamp-1">{intervention.description}</p>
+                <p className="text-xs text-gray-500 mt-1 line-clamp-1">{intervention.description}</p>
               )}
             </div>
             <button
               onClick={onDismiss}
-              className="p-1.5 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
+              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
             >
-              <X className="w-4 h-4 text-gray-500" />
+              <X className="w-4 h-4 text-gray-400" />
             </button>
           </div>
 
-          {/* 자세히 보기 토글 */}
           <button
             onClick={onToggleExpand}
-            className="w-full mt-2 py-1.5 flex items-center justify-center gap-1 text-xs text-violet-400 hover:text-violet-300 font-medium transition-colors"
+            className="w-full mt-3 py-1.5 flex items-center justify-center gap-1 text-xs text-violet-600 hover:text-violet-700 font-medium transition-colors"
           >
             {isExpanded ? (
               <>접기 <ChevronUp className="w-3 h-3" /></>
@@ -281,7 +284,6 @@ function AlertCard({
           </button>
         </div>
 
-        {/* 확장된 내용 */}
         <AnimatePresence>
           {isExpanded && (
             <motion.div
@@ -291,32 +293,29 @@ function AlertCard({
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="px-3 pb-3 space-y-3">
-                {/* 상세 설명 */}
-                <div className="p-3 bg-gray-800/50 rounded-lg">
-                  <p className="text-sm text-gray-300 leading-relaxed">{intervention.description}</p>
+              <div className="px-4 pb-4 space-y-3">
+                <div className="p-3 bg-gray-50 rounded-xl">
+                  <p className="text-sm text-gray-700 leading-relaxed">{intervention.description}</p>
                 </div>
 
-                {/* AI 제안 */}
                 {intervention.suggestion && (
-                  <div className="p-3 bg-violet-500/10 rounded-lg border border-violet-500/20">
+                  <div className="p-3 bg-violet-50 rounded-xl border border-violet-100">
                     <div className="flex items-center gap-2 mb-2">
-                      <Lightbulb className="w-4 h-4 text-violet-400" />
-                      <span className="text-xs text-violet-400 font-medium">AI 제안</span>
+                      <Lightbulb className="w-4 h-4 text-violet-600" />
+                      <span className="text-xs text-violet-600 font-semibold">AI 제안</span>
                     </div>
-                    <p className="text-sm text-gray-200 whitespace-pre-line leading-relaxed">
+                    <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">
                       {intervention.suggestion}
                     </p>
                   </div>
                 )}
 
-                {/* 액션 버튼 */}
                 <div className="flex gap-2">
                   <button
                     onClick={onAdopt}
                     className={cn(
                       'flex-1 py-2.5 px-4 text-white text-sm font-semibold rounded-xl transition-all',
-                      'bg-gradient-to-r shadow-lg hover:shadow-xl hover:scale-[1.02]',
+                      'bg-gradient-to-r shadow-md hover:shadow-lg hover:scale-[1.02]',
                       gradient,
                     )}
                   >
@@ -327,7 +326,7 @@ function AlertCard({
                   </button>
                   <button
                     onClick={onDefer}
-                    className="flex-1 py-2.5 px-4 bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-semibold rounded-xl transition-colors border border-white/5"
+                    className="flex-1 py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl transition-colors"
                   >
                     <span className="flex items-center justify-center gap-2">
                       <SkipForward className="w-4 h-4" />
@@ -340,9 +339,8 @@ function AlertCard({
           )}
         </AnimatePresence>
 
-        {/* 축소 상태일 때 간단한 버튼 */}
         {!isExpanded && (
-          <div className="px-3 pb-3 flex gap-2">
+          <div className="px-4 pb-4 flex gap-2">
             <button
               onClick={onAdopt}
               className={cn(
@@ -355,7 +353,7 @@ function AlertCard({
             </button>
             <button
               onClick={onDefer}
-              className="flex-1 py-2 bg-gray-800 hover:bg-gray-700 text-gray-400 text-xs font-semibold rounded-lg transition-colors"
+              className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold rounded-lg transition-colors"
             >
               <SkipForward className="w-3.5 h-3.5 inline mr-1" />
               보류
@@ -390,26 +388,26 @@ function HUDMinimized({
       {/* Left - Logo & Status */}
       <div className="flex items-center gap-3">
         <div className="relative">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/25">
             <Brain className="w-6 h-6 text-white" />
           </div>
-          <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-gray-900 animate-pulse" />
+          <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white animate-pulse" />
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-white">Onno</span>
-            <span className="text-[10px] px-2 py-0.5 bg-green-500/20 text-green-400 rounded-full font-medium">
+            <span className="text-sm font-bold text-gray-900">Onno</span>
+            <span className="text-[10px] px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full font-semibold">
               LIVE
             </span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-400">
-            <span className="font-mono">{meetingMinutes}:{meetingSeconds.toString().padStart(2, '0')}</span>
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <span className="font-mono font-medium text-gray-700">{meetingMinutes}:{meetingSeconds.toString().padStart(2, '0')}</span>
             {currentSpeaker && (
               <>
-                <span>·</span>
+                <span className="text-gray-300">·</span>
                 <span className="flex items-center gap-1">
-                  <Volume2 className="w-3 h-3 text-green-400" />
-                  {currentSpeaker}
+                  <Volume2 className="w-3 h-3 text-emerald-500" />
+                  <span className="text-gray-600">{currentSpeaker}</span>
                 </span>
               </>
             )}
@@ -419,26 +417,25 @@ function HUDMinimized({
 
       {/* Right - Quality Score & Actions */}
       <div className="flex items-center gap-3">
-        {/* Mini Quality Gauge */}
-        <div className="relative w-10 h-10">
+        <div className="relative w-11 h-11">
           <svg className="w-full h-full -rotate-90">
             <circle
-              cx="20"
-              cy="20"
-              r="16"
+              cx="22"
+              cy="22"
+              r="18"
               stroke="currentColor"
               strokeWidth="3"
               fill="none"
-              className="text-gray-700"
+              className="text-gray-100"
             />
             <circle
-              cx="20"
-              cy="20"
-              r="16"
+              cx="22"
+              cy="22"
+              r="18"
               stroke="url(#qualityGradientMini)"
               strokeWidth="3"
               fill="none"
-              strokeDasharray={`${(qualityScore / 100) * 100.5} 100.5`}
+              strokeDasharray={`${(qualityScore / 100) * 113} 113`}
               strokeLinecap="round"
             />
             <defs>
@@ -448,16 +445,16 @@ function HUDMinimized({
               </linearGradient>
             </defs>
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
+          <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-900">
             {qualityScore}
           </span>
         </div>
 
         <button
           onClick={onExpand}
-          className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
-          <Maximize2 className="w-4 h-4 text-gray-400" />
+          <Maximize2 className="w-4 h-4 text-gray-500" />
         </button>
       </div>
     </motion.div>
@@ -497,20 +494,20 @@ function HUDExpanded({
       className="w-full flex flex-col cursor-move"
     >
       {/* Header */}
-      <div className="px-5 py-4 border-b border-white/5">
+      <div className="px-5 py-4 border-b border-gray-100">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/25">
                 <Brain className="w-5 h-5 text-white" />
               </div>
-              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900" />
+              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">{meetingTitle}</h3>
-              <div className="flex items-center gap-2 text-xs text-gray-400">
-                <span className="font-mono">{meetingMinutes}:{meetingSeconds.toString().padStart(2, '0')}</span>
-                <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded text-[10px] font-medium">
+              <h3 className="text-sm font-bold text-gray-900">{meetingTitle}</h3>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="font-mono font-medium text-gray-700">{meetingMinutes}:{meetingSeconds.toString().padStart(2, '0')}</span>
+                <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[10px] font-semibold">
                   실시간 분석
                 </span>
               </div>
@@ -518,25 +515,24 @@ function HUDExpanded({
           </div>
           <button
             onClick={onMinimize}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <Minimize2 className="w-4 h-4 text-gray-400" />
+            <Minimize2 className="w-4 h-4 text-gray-500" />
           </button>
         </div>
 
         {/* Progress Bar */}
-        <div className="relative h-1 bg-gray-800 rounded-full overflow-hidden">
+        <div className="relative h-1.5 bg-gray-100 rounded-full overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
             className="absolute inset-y-0 left-0 bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 rounded-full"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
         </div>
       </div>
 
       {/* Quality Score Section */}
-      <div className="px-5 py-4 border-b border-white/5">
+      <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-violet-50/50 to-fuchsia-50/50">
         <div className="flex items-center gap-4">
           {/* Circular Quality Gauge */}
           <div className="relative w-20 h-20 flex-shrink-0">
@@ -548,7 +544,7 @@ function HUDExpanded({
                 stroke="currentColor"
                 strokeWidth="6"
                 fill="none"
-                className="text-gray-800"
+                className="text-white"
               />
               <circle
                 cx="40"
@@ -559,7 +555,6 @@ function HUDExpanded({
                 fill="none"
                 strokeDasharray={`${(qualityScore / 100) * 213.6} 213.6`}
                 strokeLinecap="round"
-                className="drop-shadow-lg"
               />
               <defs>
                 <linearGradient id="qualityGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -570,13 +565,13 @@ function HUDExpanded({
               </defs>
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-2xl font-bold text-white">{qualityScore}</span>
-              <span className="text-[10px] text-gray-500">품질 점수</span>
+              <span className="text-2xl font-bold text-gray-900">{qualityScore}</span>
+              <span className="text-[10px] text-gray-500 font-medium">품질 점수</span>
             </div>
           </div>
 
           {/* Quality Metrics */}
-          <div className="flex-1 space-y-2">
+          <div className="flex-1 space-y-2.5">
             <QualityMetric icon={<Mic className="w-3.5 h-3.5" />} label="참여도" value={85} />
             <QualityMetric icon={<Target className="w-3.5 h-3.5" />} label="집중도" value={78} />
             <QualityMetric icon={<TrendingUp className="w-3.5 h-3.5" />} label="진행률" value={Math.round(progress)} />
@@ -586,21 +581,21 @@ function HUDExpanded({
 
       {/* Live Transcript Preview */}
       {currentSpeaker && transcript.length > 0 && (
-        <div className="px-5 py-3 border-b border-white/5 bg-violet-500/5">
+        <div className="px-5 py-3 border-b border-gray-100 bg-violet-50/50">
           <div className="flex items-start gap-3">
             <div className="relative flex-shrink-0">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-md">
                 {currentSpeaker.name.charAt(0)}
               </div>
               <motion.div
                 animate={{ scale: [1, 1.3, 1] }}
                 transition={{ repeat: Infinity, duration: 1 }}
-                className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900"
+                className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white"
               />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-violet-400 font-medium mb-0.5">{currentSpeaker.name}</p>
-              <p className="text-sm text-gray-300 line-clamp-2">
+              <p className="text-xs text-violet-600 font-semibold mb-0.5">{currentSpeaker.name}</p>
+              <p className="text-sm text-gray-700 line-clamp-2 leading-relaxed">
                 {transcript[transcript.length - 1]?.content || '발언 중...'}
               </p>
             </div>
@@ -614,8 +609,10 @@ function HUDExpanded({
           {/* Insights */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <Zap className="w-4 h-4 text-violet-400" />
-              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+              <div className="w-6 h-6 rounded-lg bg-violet-100 flex items-center justify-center">
+                <Zap className="w-3.5 h-3.5 text-violet-600" />
+              </div>
+              <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
                 실시간 인사이트
               </h4>
             </div>
@@ -627,7 +624,7 @@ function HUDExpanded({
                 ))}
               </div>
             ) : (
-              <div className="text-sm text-gray-500 text-center py-4 bg-gray-800/30 rounded-xl">
+              <div className="text-sm text-gray-500 text-center py-4 bg-gray-50 rounded-xl">
                 회의를 분석하고 있습니다...
               </div>
             )}
@@ -637,8 +634,10 @@ function HUDExpanded({
           {questions.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <HelpCircle className="w-4 h-4 text-purple-400" />
-                <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                <div className="w-6 h-6 rounded-lg bg-amber-100 flex items-center justify-center">
+                  <HelpCircle className="w-3.5 h-3.5 text-amber-600" />
+                </div>
+                <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
                   미해결 질문 ({questions.length})
                 </h4>
               </div>
@@ -653,7 +652,7 @@ function HUDExpanded({
       </div>
 
       {/* Footer */}
-      <div className="px-5 py-3 border-t border-white/5 bg-gray-900/50">
+      <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="flex -space-x-2">
@@ -661,20 +660,20 @@ function HUDExpanded({
                 <div
                   key={p.id}
                   className={cn(
-                    'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-gray-900',
+                    'w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-white shadow-sm',
                     p.isSpeaking
-                      ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white'
-                      : 'bg-gray-700 text-gray-300',
+                      ? 'bg-gradient-to-br from-emerald-400 to-teal-500 text-white'
+                      : 'bg-gray-200 text-gray-600',
                   )}
                 >
                   {p.name.charAt(0)}
                 </div>
               ))}
             </div>
-            <span className="text-xs text-gray-500">{participants.length}명 참석</span>
+            <span className="text-xs text-gray-500 font-medium">{participants.length}명 참석</span>
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-gray-500">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+          <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             Onno AI 분석 중
           </div>
         </div>
@@ -694,9 +693,9 @@ function QualityMetric({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <div className="text-gray-500">{icon}</div>
-      <span className="text-xs text-gray-400 w-12">{label}</span>
-      <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+      <div className="text-gray-400">{icon}</div>
+      <span className="text-xs text-gray-600 w-12 font-medium">{label}</span>
+      <div className="flex-1 h-2 bg-white rounded-full overflow-hidden shadow-inner">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${value}%` }}
@@ -704,14 +703,14 @@ function QualityMetric({
           className={cn(
             'h-full rounded-full',
             value >= 80
-              ? 'bg-gradient-to-r from-green-500 to-emerald-400'
+              ? 'bg-gradient-to-r from-emerald-400 to-teal-400'
               : value >= 60
-              ? 'bg-gradient-to-r from-yellow-500 to-amber-400'
-              : 'bg-gradient-to-r from-red-500 to-pink-400',
+              ? 'bg-gradient-to-r from-amber-400 to-yellow-400'
+              : 'bg-gradient-to-r from-rose-400 to-pink-400',
           )}
         />
       </div>
-      <span className="text-xs font-medium text-gray-300 w-8 text-right">{value}%</span>
+      <span className="text-xs font-bold text-gray-700 w-8 text-right">{value}%</span>
     </div>
   )
 }
@@ -720,22 +719,25 @@ function InsightCard({ insight }: { insight: HUDInsight }) {
   const config = {
     context: {
       icon: <Brain className="w-4 h-4" />,
-      bgClass: 'bg-blue-500/10 border-blue-500/20',
-      iconClass: 'text-blue-400',
+      bgClass: 'bg-blue-50 border-blue-100',
+      iconClass: 'text-blue-600',
+      textClass: 'text-gray-700',
     },
     suggestion: {
       icon: <Lightbulb className="w-4 h-4" />,
-      bgClass: 'bg-green-500/10 border-green-500/20',
-      iconClass: 'text-green-400',
+      bgClass: 'bg-emerald-50 border-emerald-100',
+      iconClass: 'text-emerald-600',
+      textClass: 'text-gray-700',
     },
     alert: {
       icon: <AlertTriangle className="w-4 h-4" />,
-      bgClass: 'bg-amber-500/10 border-amber-500/20',
-      iconClass: 'text-amber-400',
+      bgClass: 'bg-amber-50 border-amber-100',
+      iconClass: 'text-amber-600',
+      textClass: 'text-gray-700',
     },
   }
 
-  const { icon, bgClass, iconClass } = config[insight.type]
+  const { icon, bgClass, iconClass, textClass } = config[insight.type]
 
   return (
     <motion.div
@@ -743,8 +745,8 @@ function InsightCard({ insight }: { insight: HUDInsight }) {
       animate={{ opacity: 1, x: 0 }}
       className={cn('flex items-start gap-3 p-3 rounded-xl border', bgClass)}
     >
-      <div className={cn('mt-0.5', iconClass)}>{icon}</div>
-      <p className="text-sm text-gray-300 flex-1 leading-relaxed">{insight.content}</p>
+      <div className={cn('mt-0.5 flex-shrink-0', iconClass)}>{icon}</div>
+      <p className={cn('text-sm flex-1 leading-relaxed', textClass)}>{insight.content}</p>
     </motion.div>
   )
 }
@@ -754,16 +756,16 @@ function QuestionCard({ question }: { question: HUDQuestion }) {
     <motion.div
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
-      className="flex items-start gap-3 p-3 bg-purple-500/10 rounded-xl border border-purple-500/20"
+      className="flex items-start gap-3 p-3 bg-amber-50 rounded-xl border border-amber-100"
     >
-      <div className="w-7 h-7 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
-        <span className="text-xs font-bold text-purple-400">{question.speaker.charAt(0)}</span>
+      <div className="w-7 h-7 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0">
+        <span className="text-xs font-bold text-amber-700">{question.speaker.charAt(0)}</span>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-purple-400 font-medium mb-0.5">{question.speaker}</p>
-        <p className="text-sm text-gray-300 leading-relaxed">{question.content}</p>
+        <p className="text-xs text-amber-700 font-semibold mb-0.5">{question.speaker}</p>
+        <p className="text-sm text-gray-700 leading-relaxed">{question.content}</p>
       </div>
-      <MessageSquare className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
+      <MessageSquare className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
     </motion.div>
   )
 }

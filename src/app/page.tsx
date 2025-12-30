@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Header } from '@/components/landing/Header'
 import { Hero } from '@/components/landing/Hero'
@@ -20,10 +20,18 @@ import { Rocket } from 'lucide-react'
 export default function LandingPage() {
   const router = useRouter()
   const { openSignupModal, isAuthenticated, user } = useAuthStore()
+  const [mounted, setMounted] = useState(false)
+  const [isRedirecting, setIsRedirecting] = useState(false)
+
+  // 클라이언트 마운트 확인
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Redirect authenticated users to onboarding or dashboard
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (mounted && isAuthenticated && user) {
+      setIsRedirecting(true)
       const hasCompletedOnboarding = localStorage.getItem('onno_onboarding_complete')
       if (hasCompletedOnboarding) {
         router.push('/dashboard')
@@ -31,10 +39,10 @@ export default function LandingPage() {
         router.push('/onboarding')
       }
     }
-  }, [isAuthenticated, user, router])
+  }, [mounted, isAuthenticated, user, router])
 
-  // Show loading while redirecting
-  if (isAuthenticated && user) {
+  // Show loading only when actually redirecting
+  if (isRedirecting) {
     return (
       <main className="min-h-screen flex items-center justify-center">
         <div className="text-center">

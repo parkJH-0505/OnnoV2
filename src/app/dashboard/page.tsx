@@ -177,23 +177,34 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-6 mb-8 text-white"
+          className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 rounded-2xl p-6 mb-8 text-white shadow-xl shadow-purple-500/20"
         >
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-bold mb-2">회의 준비 완료!</h2>
-              <p className="text-blue-100">
-                Google Meet이나 Zoom에서 회의를 시작하면 Onno가 자동으로 분석을 시작합니다.
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="px-2.5 py-1 bg-white/20 rounded-full text-xs font-semibold uppercase tracking-wide">
+                  추천
+                </span>
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Onno AI를 직접 체험해보세요!</h2>
+              <p className="text-white/80">
+                실제 회의 환경에서 Onno가 어떻게 작동하는지 15분 데모로 경험해보세요.
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Link href="/demo/meeting" className="flex items-center gap-2 px-6 py-3 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition-colors">
-                <Play size={20} />
-                회의 시작하기
+            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+              <Link
+                href="/demo/immersive"
+                className="flex items-center justify-center gap-2 px-8 py-4 bg-white text-purple-700 rounded-xl font-bold text-lg hover:bg-purple-50 transition-all shadow-lg hover:shadow-xl hover:scale-[1.02]"
+              >
+                <Monitor size={22} />
+                몰입형 데모 체험하기
               </Link>
-              <Link href="/demo/immersive" className="flex items-center gap-2 px-6 py-3 bg-blue-400 text-white rounded-xl font-semibold hover:bg-blue-300 transition-colors">
-                <Monitor size={20} />
-                몰입형 데모
+              <Link
+                href="/demo/meeting"
+                className="flex items-center justify-center gap-2 px-5 py-3 bg-white/10 text-white/70 rounded-xl font-medium text-sm hover:bg-white/20 hover:text-white transition-colors border border-white/20"
+              >
+                <Play size={16} />
+                기존 버전
               </Link>
             </div>
           </div>
